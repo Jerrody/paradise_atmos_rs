@@ -1,0 +1,7 @@
+pub const SPECIFIC_HEAT_TOXIN: f32 = 200.0;
+pub const SPECIFIC_HEAT_AIR: f32 = 20.0;
+pub const SPECIFIC_HEAT_CDO: f32 = 30.0;
+pub const SPECIFIC_HEAT_N2O: f32 = 40.0;
+pub const SPECIFIC_HEAT_AGENT_B: f32 = 300.0;
+
+pub const MINIMUM_HEAT_CAPACITY: f32 = 0.0003;

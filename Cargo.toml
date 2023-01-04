@@ -1,0 +1,10 @@
+[package]
+name = "paradise_atmos_rs"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+auxtools = { git = "https://github.com/willox/auxtools" }
