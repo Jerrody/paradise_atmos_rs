@@ -179,4 +179,156 @@ impl GasMixture {
                 .unwrap_unchecked()
         }
     }
+
+    #[inline(always)]
+    pub fn set_oxygen(gas_mixture: &Value, value: f32) {
+        unsafe {
+            gas_mixture
+                .set(string_ref!(Self::OXYGEN_NAME), value)
+                .unwrap_unchecked()
+        }
+    }
+
+    #[inline(always)]
+    fn set_carbon_dioxide(gas_mixture: &Value, value: f32) {
+        unsafe {
+            gas_mixture
+                .set(string_ref!(Self::CARBON_DIOXIDE_NAME), value)
+                .unwrap_unchecked()
+        }
+    }
+
+    #[inline(always)]
+    fn set_nitrogen(gas_mixture: &Value, value: f32) {
+        unsafe {
+            gas_mixture
+                .set(string_ref!(Self::NITROGEN_NAME), value)
+                .unwrap_unchecked()
+        }
+    }
+
+    #[inline(always)]
+    fn set_toxins(gas_mixture: &Value, value: f32) {
+        unsafe {
+            gas_mixture
+                .set(string_ref!(Self::TOXINS_NAME), value)
+                .unwrap_unchecked()
+        }
+    }
+
+    #[inline(always)]
+    fn set_sleeping_agent(gas_mixture: &Value, value: f32) {
+        unsafe {
+            gas_mixture
+                .set(string_ref!(Self::SLEEPING_AGENT_NAME), value)
+                .unwrap_unchecked()
+        }
+    }
+
+    #[inline(always)]
+    fn set_agent_b(gas_mixture: &Value, value: f32) {
+        unsafe {
+            gas_mixture
+                .set(string_ref!(Self::AGENT_B_NAME), value)
+                .unwrap_unchecked()
+        }
+    }
+
+    #[inline(always)]
+    fn set_volume(gas_mixture: &Value, value: f32) {
+        unsafe {
+            gas_mixture
+                .set(string_ref!(Self::VOLUME_NAME), value)
+                .unwrap_unchecked()
+        }
+    }
+
+    #[inline(always)]
+    fn set_temperature(gas_mixture: &Value, value: f32) {
+        unsafe {
+            gas_mixture
+                .set(string_ref!(Self::TEMPERATURE_NAME), value)
+                .unwrap_unchecked()
+        }
+    }
+
+    #[inline(always)]
+    fn set_last_share(gas_mixture: &Value, value: f32) {
+        unsafe {
+            gas_mixture
+                .set(string_ref!(Self::LAST_SHARE_NAME), value)
+                .unwrap_unchecked()
+        }
+    }
+
+    #[inline(always)]
+    fn set_fuel_burnt(gas_mixture: &Value, value: f32) {
+        unsafe {
+            gas_mixture
+                .set(string_ref!(Self::FUEL_BURNT_NAME), value)
+                .unwrap_unchecked()
+        }
+    }
+
+    #[inline(always)]
+    fn set_oxygen_archived(gas_mixture: &Value, value: f32) {
+        unsafe {
+            gas_mixture
+                .set(string_ref!(Self::OXYGEN_ARCHIVED_NAME), value)
+                .unwrap_unchecked()
+        }
+    }
+    #[inline(always)]
+    fn set_carbon_dioxide_archived(gas_mixture: &Value, value: f32) {
+        unsafe {
+            gas_mixture
+                .set(string_ref!(Self::CARBON_DIOXIDE_ARCHIVED_NAME), value)
+                .unwrap_unchecked()
+        }
+    }
+
+    #[inline(always)]
+    fn set_nitrogen_archived(gas_mixture: &Value, value: f32) {
+        unsafe {
+            gas_mixture
+                .set(string_ref!(Self::NITROGEN_ARCHIVED_NAME), value)
+                .unwrap_unchecked()
+        }
+    }
+
+    #[inline(always)]
+    fn set_toxins_archived(gas_mixture: &Value, value: f32) {
+        unsafe {
+            gas_mixture
+                .set(string_ref!(Self::TOXINS_ARCHIVED_NAME), value)
+                .unwrap_unchecked()
+        }
+    }
+
+    #[inline(always)]
+    fn set_sleeping_agent_archived(gas_mixture: &Value, value: f32) {
+        unsafe {
+            gas_mixture
+                .set(string_ref!(Self::SLEEPING_AGENT_ARCHIVED_NAME), value)
+                .unwrap_unchecked()
+        }
+    }
+
+    #[inline(always)]
+    fn set_agent_b_archived(gas_mixture: &Value, value: f32) {
+        unsafe {
+            gas_mixture
+                .set(string_ref!(Self::AGENT_B_ARCHIVED_NAME), value)
+                .unwrap_unchecked()
+        }
+    }
+
+    #[inline(always)]
+    fn set_temperature_archived(gas_mixture: &Value, value: f32) {
+        unsafe {
+            gas_mixture
+                .set(string_ref!(Self::TEMPERATURE_ARCHIVED_NAME), value)
+                .unwrap_unchecked()
+        }
+    }
 }
