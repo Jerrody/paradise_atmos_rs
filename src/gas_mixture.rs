@@ -3,8 +3,11 @@ mod helpers;
 mod procs;
 
 use auxtools::*;
+use heat_constants::*;
 
 use crate::string_ref;
+
+const R_IDEAL_GAS_EQUATION: f32 = 8.31;
 
 struct GasMixture;
 
@@ -330,5 +333,31 @@ impl GasMixture {
                 .set(string_ref!(Self::TEMPERATURE_ARCHIVED_NAME), value)
                 .unwrap_unchecked()
         }
+    }
+
+    #[inline(always)]
+    fn get_total_moles(gas_mixture: &Value) -> f32 {
+        Self::get_oxygen(gas_mixture)
+            + Self::get_carbon_dioxide(gas_mixture)
+            + Self::get_nitrogen(gas_mixture)
+            + Self::get_toxins(gas_mixture)
+            + Self::get_sleeping_agent(gas_mixture)
+            + Self::get_agent_b(gas_mixture)
+    }
+
+    #[inline(always)]
+    fn get_heat_capacity(gas_mixture: &Value) -> f32 {
+        let oxygen = Self::get_oxygen(gas_mixture);
+        let carbon_dioxide = Self::get_oxygen(gas_mixture);
+        let nitrogen = Self::get_oxygen(gas_mixture);
+        let toxins = Self::get_oxygen(gas_mixture);
+        let sleeping_agent = Self::get_oxygen(gas_mixture);
+        let agent_b = Self::get_oxygen(gas_mixture);
+
+        carbon_dioxide * SPECIFIC_HEAT_CDO
+            + (oxygen + nitrogen) * SPECIFIC_HEAT_AIR
+            + toxins * SPECIFIC_HEAT_TOXIN
+            + sleeping_agent * SPECIFIC_HEAT_N2O
+            + agent_b * SPECIFIC_HEAT_AGENT_B
     }
 }
