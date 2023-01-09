@@ -3,35 +3,35 @@ use auxtools::*;
 use super::GasMixture as GS;
 
 #[hook("/datum/gas_mixture/proc/heat_capacity")]
-pub fn heat_capacity(self_gas_mixture: Value) {
-    Ok(Value::from(GS::get_heat_capacity(self_gas_mixture)))
+pub fn heat_capacity() {
+    Ok(Value::from(GS::get_heat_capacity(src)))
 }
 
 #[hook("/datum/gas_mixture/proc/heat_capacity_archived")]
-pub fn heat_capacity_archived(self_gas_mixture: Value) {
-    Ok(Value::from(GS::get_heat_capacity(self_gas_mixture)))
+pub fn heat_capacity_archived() {
+    Ok(Value::from(GS::get_heat_capacity(src)))
 }
 
 #[hook("/datum/gas_mixture/proc/total_moles")]
-pub fn total_moles(self_gas_mixture: Value) {
-    Ok(Value::from(GS::get_total_moles(self_gas_mixture)))
+pub fn total_moles() {
+    Ok(Value::from(GS::get_total_moles(src)))
 }
 
 #[hook("/datum/gas_mixture/proc/total_trace_moles")]
-pub fn total_trace_moles(self_gas_mixture: Value) {
+pub fn total_trace_moles() {
     Ok(Value::from(
-        GS::get_sleeping_agent(self_gas_mixture) + GS::get_agent_b(self_gas_mixture),
+        GS::get_sleeping_agent(src) + GS::get_agent_b(src),
     ))
 }
 
 #[hook("/datum/gas_mixture/proc/return_pressure")]
-pub fn return_pressure(self_gas_mixture: Value) {
-    if GS::get_volume(self_gas_mixture) > 0.0 {
+pub fn return_pressure() {
+    if GS::get_volume(src) > 0.0 {
         return Ok(Value::from(
-            GS::get_total_moles(self_gas_mixture)
+            GS::get_total_moles(src)
                 * crate::gas_mixture::R_IDEAL_GAS_EQUATION
-                * GS::get_temperature(self_gas_mixture)
-                / GS::get_volume(self_gas_mixture),
+                * GS::get_temperature(src)
+                / GS::get_volume(src),
         ));
     }
 
@@ -39,16 +39,14 @@ pub fn return_pressure(self_gas_mixture: Value) {
 }
 
 #[hook("/datum/gas_mixture/proc/return_volume")]
-pub fn return_volume(self_gas_mixture: Value) {
-    Ok(Value::from(
-        f32::default().max(GS::get_volume(self_gas_mixture)),
-    ))
+pub fn return_volume() {
+    Ok(Value::from(f32::default().max(GS::get_volume(src))))
 }
 
 #[hook("/datum/gas_mixture/proc/thermal_energy")]
-pub fn thermal_energy(self_gas_mixture: Value) {
+pub fn thermal_energy() {
     Ok(Value::from(
-        GS::get_temperature(self_gas_mixture) * GS::get_heat_capacity(self_gas_mixture),
+        GS::get_temperature(src) * GS::get_heat_capacity(src),
     ))
 }
 
