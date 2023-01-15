@@ -21,7 +21,7 @@ pub mod macros {
     /// #### Description
     /// Creates a  wrapped with [`Result::Ok`] a [`auxtools::Value`] from passed value.
     #[macro_export]
-    macro_rules! value_with {
+    macro_rules! value {
         ($value:expr) => {
             Ok(Value::from($value))
         };
