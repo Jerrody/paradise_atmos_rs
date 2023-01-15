@@ -8,7 +8,6 @@ pub struct Mixture {
     pub toxins: f32,
     pub sleeping_agent: f32,
     pub agent_b: f32,
-    pub volume: f32,
     /// In Kelvin.
     pub temperature: f32,
 }
@@ -24,7 +23,6 @@ impl Mixture {
             toxins: MixtureNative::get_toxins(gas_mixture),
             sleeping_agent: MixtureNative::get_sleeping_agent(gas_mixture),
             agent_b: MixtureNative::get_agent_b(gas_mixture),
-            volume: CELL_VOLUME,
             temperature: MixtureNative::get_temperature(gas_mixture),
         }
     }
@@ -38,7 +36,7 @@ impl Mixture {
 
         //Handle plasma burning
         if self.toxins > MINIMUM_HEAT_CAPACITY {
-            let mut plasma_burn_rate = 0.0;
+            let plasma_burn_rate;
             let oxygen_burn_rate;
             let temperature_scale;
 
@@ -51,7 +49,9 @@ impl Mixture {
 
             if temperature_scale > 0.0 {
                 oxygen_burn_rate = OXYGEN_BURN_RATE_BASE - temperature_scale;
+
                 if self.oxygen > self.toxins * PLASMA_OXYGEN_FULLBURN {
+                    plasma_burn_rate = (self.toxins * temperature_scale) / PLASMA_BURN_RATE_DELTA
                 } else {
                     plasma_burn_rate = (temperature_scale * (self.oxygen / PLASMA_OXYGEN_FULLBURN))
                         / PLASMA_BURN_RATE_DELTA;
