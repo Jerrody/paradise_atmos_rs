@@ -353,7 +353,4 @@ impl MixtureNative {
             + sleeping_agent * SPECIFIC_HEAT_N2O
             + agent_b * SPECIFIC_HEAT_AGENT_B
     }
-
-    #[inline(always)]
-    pub fn fire(gas_mixture: &Value) {}
 }
