@@ -1,21 +1,21 @@
 use super::constants::*;
 use super::mixtures::{Mixture, MixtureNative};
-use crate::value_with;
+use crate::value;
 use auxtools::*;
 
 #[hook("/datum/gas_mixture/proc/heat_capacity")]
 pub fn heat_capacity() {
-    value_with!(MixtureNative::get_heat_capacity(src))
+    value!(MixtureNative::get_heat_capacity(src))
 }
 
 #[hook("/datum/gas_mixture/proc/heat_capacity_archived")]
 pub fn heat_capacity_archived() {
-    value_with!(MixtureNative::get_heat_capacity(src))
+    value!(MixtureNative::get_heat_capacity(src))
 }
 
 #[hook("/datum/gas_mixture/proc/total_moles")]
 pub fn total_moles() {
-    value_with!(MixtureNative::get_total_moles(src))
+    value!(MixtureNative::get_total_moles(src))
 }
 
 #[hook("/datum/gas_mixture/proc/return_pressure")]
@@ -41,7 +41,7 @@ pub fn return_volume() {
 
 #[hook("/datum/gas_mixture/proc/thermal_energy")]
 pub fn thermal_energy() {
-    value_with!(MixtureNative::get_temperature(src) * MixtureNative::get_heat_capacity(src))
+    value!(MixtureNative::get_temperature(src) * MixtureNative::get_heat_capacity(src))
 }
 
 #[hook("/datum/gas_mixture/proc/react")]
@@ -59,6 +59,7 @@ pub fn react() {
             mixture.toxins * 0.25,
             mixture.agent_b * 0.05,
         ];
+
         let reaction_rate = gases
             .into_iter()
             .min_by(|a, b| a.total_cmp(b))
@@ -72,27 +73,22 @@ pub fn react() {
         reacting = true;
     }
 
-    MixtureNative::set_fuel_burnt(src, 0.0);
-    if mixture.temperature <= FIRE_MINIMUM_TEMPERATURE_TO_EXIST {
+    if mixture.temperature > FIRE_MINIMUM_TEMPERATURE_TO_EXIST {
+        let fuel_burnt = mixture.fire();
+        MixtureNative::set_fuel_burnt(src, fuel_burnt);
+        MixtureNative::set_toxins(src, mixture.toxins);
+
+        if fuel_burnt > 0.0 {
+            reacting = true;
+        }
+    }
+
+    if reacting {
         MixtureNative::set_carbon_dioxide(src, mixture.carbon_dioxide);
         MixtureNative::set_oxygen(src, mixture.oxygen);
         MixtureNative::set_agent_b(src, mixture.agent_b);
         MixtureNative::set_temperature(src, mixture.temperature);
-
-        return value_with!(Value::from(reacting));
     }
 
-    let fuel_burnt = mixture.fire();
-    if fuel_burnt > 0.0 {
-        reacting = true;
-    }
-
-    MixtureNative::set_fuel_burnt(src, fuel_burnt);
-    MixtureNative::set_carbon_dioxide(src, mixture.carbon_dioxide);
-    MixtureNative::set_oxygen(src, mixture.oxygen);
-    MixtureNative::set_agent_b(src, mixture.agent_b);
-    MixtureNative::set_temperature(src, mixture.temperature);
-    MixtureNative::set_toxins(src, mixture.toxins);
-
-    value_with!(reacting)
+    value!(reacting)
 }
