@@ -1,3 +1,5 @@
+use crate::gas_mixture::constants::*;
+
 const QUANTIZE_NEAREST: f32 = 0.0001;
 pub mod macros {
     /// #### Description
@@ -32,4 +34,21 @@ pub mod macros {
 #[inline(always)]
 pub fn quantize(value: f32) -> f32 {
     QUANTIZE_NEAREST * (value / QUANTIZE_NEAREST).round()
+}
+
+#[inline(always)]
+#[must_use]
+pub fn calculate_heat_capacity(
+    carbon_dioxide: f32,
+    oxygen: f32,
+    nitrogen: f32,
+    toxins: f32,
+    sleeping_agent: f32,
+    agent_b: f32,
+) -> f32 {
+    carbon_dioxide * SPECIFIC_HEAT_CDO
+        + (oxygen + nitrogen) * SPECIFIC_HEAT_AIR
+        + toxins * SPECIFIC_HEAT_TOXIN
+        + sleeping_agent * SPECIFIC_HEAT_N2O
+        + agent_b * SPECIFIC_HEAT_AGENT_B
 }
