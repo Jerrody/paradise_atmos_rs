@@ -1,13 +1,26 @@
 // use super::constants::*;
 // use crate::value;
-// use auxtools::*;
+use auxtools::*;
+
+use crate::null;
 
 pub use super::GAS_MIXTURES;
 
-// // #[hook("/datum/gas_mixture/proc/heat_capacity_rs")]
-// // pub fn heat_capacity() {
-// //     value!(MixtureNative::get_heat_capacity(src))
-// // }
+#[cfg(feature = "profile")]
+#[hook("/proc/enable_tracy")]
+pub fn enable_tracy() {
+    use tracing::Level;
+    use tracing_subscriber::layer::SubscriberExt;
+
+    tracing::subscriber::set_global_default(
+        tracing_subscriber::registry()
+            .with(tracing_subscriber::EnvFilter::default().add_directive(Level::DEBUG.into()))
+            .with(tracing_tracy::TracyLayer::new()),
+    )
+    .expect("set up the subscriber");
+
+    null!()
+}
 
 // // #[hook("/datum/gas_mixture/proc/heat_capacity_archived_rs")]
 // // pub fn heat_capacity_archived() {

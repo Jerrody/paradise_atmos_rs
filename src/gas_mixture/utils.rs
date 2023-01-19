@@ -31,6 +31,16 @@ pub mod macros {
     }
 }
 
+#[macro_export]
+macro_rules! profile {
+    ($s:expr) => {
+        #[cfg(feature = "profile")]
+        let span = span!(tracing::Level::INFO, $s);
+        #[cfg(feature = "profile")]
+        let _enter = span.enter();
+    };
+}
+
 // FIXME: Can be possible reason of unexpected behaviour. Check if result is expected.
 #[inline(always)]
 #[must_use]
