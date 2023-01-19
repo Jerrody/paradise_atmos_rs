@@ -34,5 +34,3 @@ pub const CELL_VOLUME: f32 = 2500.0; //;liters in a cell
 pub const BREATH_VOLUME: f32 = 1.0;
 pub const BREATH_PERCENTAGE: f32 = BREATH_VOLUME / CELL_VOLUME;
 pub const MINIMUM_TEMPERATURE_DELTA_TO_CONSIDER: f32 = 0.5;
-
-pub const ZERO: f32 = 0.0;
