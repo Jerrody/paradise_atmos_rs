@@ -21,6 +21,7 @@ tracing-subscriber = { version = "0.3.16", features = [
 
 [features]
 profile = []
+profile_proc = []
 
 [profile.release]
 lto = true
