@@ -344,7 +344,8 @@ impl Mixture {
 
         let mut reacting = false; //set to 1 if a notable reaction occured (used by pipe_network)
 
-        if self.temperature > 900.0
+        if self.agent_b != 0.0
+            && self.temperature > 900.0
             && self.toxins > MINIMUM_HEAT_CAPACITY
             && self.carbon_dioxide > MINIMUM_HEAT_CAPACITY
         {
