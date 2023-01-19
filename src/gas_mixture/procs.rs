@@ -6,6 +6,8 @@ use crate::{null, profile_proc, value};
 
 use super::{turf::Turf, Mixture};
 
+const DEFAULT_ATMOS_ADJACENT_TURFS: f32 = 4.0;
+
 #[cfg(any(feature = "profile", feature = "profile_proc"))]
 #[hook("/proc/enable_tracy")]
 pub fn enable_tracy() {
@@ -375,7 +377,9 @@ pub fn check_turf(turf_model: &Value, atmos_adjacent_turfs: &Value) {
     profile_proc!("check_turf");
 
     let turf_model = unsafe { Turf::new(turf_model) };
-    let atmos_adjacent_turfs = unsafe { atmos_adjacent_turfs.as_number().unwrap_unchecked() };
+    let atmos_adjacent_turfs = atmos_adjacent_turfs
+        .as_number()
+        .unwrap_or(DEFAULT_ATMOS_ADJACENT_TURFS);
 
     value!(unsafe {
         Mixture::get_mixture_by_src(src)
@@ -401,7 +405,9 @@ pub fn check_turf_total(turf_model: &Value) {
 pub fn share(sharer: &Value, atmos_adjacent_turfs: &Value) {
     profile_proc!("share");
 
-    let atmos_adjacent_turfs = unsafe { atmos_adjacent_turfs.as_number().unwrap_unchecked() };
+    let atmos_adjacent_turfs = atmos_adjacent_turfs
+        .as_number()
+        .unwrap_or(DEFAULT_ATMOS_ADJACENT_TURFS);
 
     value!(unsafe {
         Mixture::get_mixture_mut_by_src(src)
@@ -444,7 +450,9 @@ pub fn mimic(
     let model_thermal_conductivity =
         unsafe { model_thermal_conductivity.as_number().unwrap_unchecked() };
     let model_heat_capacity = unsafe { model_heat_capacity.as_number().unwrap_unchecked() };
-    let atmos_adjacent_turfs = unsafe { atmos_adjacent_turfs.as_number().unwrap_unchecked() };
+    let atmos_adjacent_turfs = atmos_adjacent_turfs
+        .as_number()
+        .unwrap_or(DEFAULT_ATMOS_ADJACENT_TURFS);
 
     value!(unsafe {
         Mixture::get_mixture_mut_by_src(src)
