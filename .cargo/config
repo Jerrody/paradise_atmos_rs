@@ -1,0 +1,3 @@
+[build]
+rustflags = ["-C", "target-cpu=native"]
+target = "i686-pc-windows-msvc"
