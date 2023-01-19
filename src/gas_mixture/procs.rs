@@ -187,7 +187,7 @@ pub fn set_last_share(value: &Value) {
 }
 
 #[hook("/datum/gas_mixture/proc/get_heat_capacity")]
-fn get_heat_capacity() {
+pub fn get_heat_capacity() {
     profile_proc!("get_heat_capacity");
 
     let heat_capacity = unsafe {
