@@ -14,10 +14,10 @@ use crate::{profile, string_ref};
 
 use self::turf::Turf;
 
-type MixtureRef<'a> = dashmap::mapref::one::Ref<'a, usize, Mixture, ahash::RandomState>;
-type MixtureRefMut<'a> = dashmap::mapref::one::RefMut<'a, usize, Mixture, ahash::RandomState>;
+type MixtureRef<'a> = dashmap::mapref::one::Ref<'a, u32, Mixture, ahash::RandomState>;
+type MixtureRefMut<'a> = dashmap::mapref::one::RefMut<'a, u32, Mixture, ahash::RandomState>;
 
-pub static GAS_MIXTURES: Lazy<DashMap<usize, Mixture, ahash::RandomState>> = Lazy::new(|| {
+pub static GAS_MIXTURES: Lazy<DashMap<u32, Mixture, ahash::RandomState>> = Lazy::new(|| {
     let hasher = ahash::RandomState::new();
     DashMap::with_capacity_and_hasher(Mixture::DEFAULT_ALLOCATED_GAS_MIXTURES_COUNT, hasher)
 });
@@ -63,50 +63,46 @@ impl Mixture {
     }
 
     #[inline(always)]
-    pub fn register(id: usize) {
+    pub unsafe fn register(src: &Value) {
         profile!("register");
+
+        let id = src.raw.data.id;
 
         GAS_MIXTURES.insert(id, Self::new());
     }
 
     #[inline(always)]
-    pub unsafe fn unregister(id: usize) {
+    pub unsafe fn unregister(src: &Value) {
         profile!("unregister");
+
+        let id = src.raw.data.id;
 
         GAS_MIXTURES.remove(&id).unwrap_unchecked();
     }
 
     #[inline(always)]
     #[must_use]
-    pub unsafe fn get_mixture_by_value(id: &Value) -> Option<MixtureRef> {
+    pub unsafe fn get_mixture_by_src(src: &Value) -> Option<MixtureRef> {
         profile!("get_mixture_by_value");
 
-        let id = id.as_number().unwrap_unchecked() as usize;
+        let id = src.raw.data.id;
 
         GAS_MIXTURES.get(&id)
     }
 
     #[inline(always)]
     #[must_use]
-    pub unsafe fn get_mixture_mut_by_value(id: &Value) -> Option<MixtureRefMut> {
+    pub unsafe fn get_mixture_mut_by_src(src: &Value) -> Option<MixtureRefMut> {
         profile!("get_mixture_mut_by_value");
 
-        let id = id.as_number().unwrap_unchecked() as usize;
+        let id = src.raw.data.id;
 
         GAS_MIXTURES.get_mut(&id)
     }
 
     #[inline(always)]
     #[must_use]
-    pub unsafe fn get_mixture_by_id<'a>(id: usize) -> MixtureRef<'a> {
-        profile!("get_mixture_by_id");
-
-        GAS_MIXTURES.get(&id).unwrap_unchecked()
-    }
-
-    #[inline(always)]
-    #[must_use]
-    pub unsafe fn get_mixture_mut_by_id<'a>(id: usize) -> Option<MixtureRefMut<'a>> {
+    pub unsafe fn get_mixture_mut_by_id<'a>(id: u32) -> Option<MixtureRefMut<'a>> {
         profile!("get_mixture_mut_by_id");
 
         GAS_MIXTURES.get_mut(&id)
@@ -114,62 +110,62 @@ impl Mixture {
 
     #[inline(always)]
     #[must_use]
-    pub unsafe fn get_oxygen(id: &Value) -> f32 {
+    pub unsafe fn get_oxygen(src: &Value) -> f32 {
         profile!("get_oxygen");
 
-        Self::get_mixture_by_value(id).unwrap_unchecked().oxygen
+        Self::get_mixture_by_src(src).unwrap_unchecked().oxygen
     }
 
     #[inline(always)]
     #[must_use]
-    pub unsafe fn get_carbon_dioxide(id: &Value) -> f32 {
+    pub unsafe fn get_carbon_dioxide(src: &Value) -> f32 {
         profile!("get_carbon_dioxide");
 
-        Self::get_mixture_by_value(id)
+        Self::get_mixture_by_src(src)
             .unwrap_unchecked()
             .carbon_dioxide
     }
 
     #[inline(always)]
     #[must_use]
-    pub unsafe fn get_nitrogen(id: &Value) -> f32 {
+    pub unsafe fn get_nitrogen(src: &Value) -> f32 {
         profile!("get_nitrogen");
 
-        Self::get_mixture_by_value(id).unwrap_unchecked().nitrogen
+        Self::get_mixture_by_src(src).unwrap_unchecked().nitrogen
     }
 
     #[inline(always)]
     #[must_use]
-    pub unsafe fn get_toxins(id: &Value) -> f32 {
+    pub unsafe fn get_toxins(src: &Value) -> f32 {
         profile!("get_toxins");
 
-        Self::get_mixture_by_value(id).unwrap_unchecked().toxins
+        Self::get_mixture_by_src(src).unwrap_unchecked().toxins
     }
 
     #[inline(always)]
     #[must_use]
-    pub unsafe fn get_sleeping_agent(id: &Value) -> f32 {
+    pub unsafe fn get_sleeping_agent(src: &Value) -> f32 {
         profile!("get_sleeping_agent");
 
-        Self::get_mixture_by_value(id)
+        Self::get_mixture_by_src(src)
             .unwrap_unchecked()
             .sleeping_agent
     }
 
     #[inline(always)]
     #[must_use]
-    pub unsafe fn get_agent_b(id: &Value) -> f32 {
+    pub unsafe fn get_agent_b(src: &Value) -> f32 {
         profile!("get_agent_b");
 
-        Self::get_mixture_by_value(id).unwrap_unchecked().agent_b
+        Self::get_mixture_by_src(src).unwrap_unchecked().agent_b
     }
 
     #[inline(always)]
     #[must_use]
-    pub unsafe fn get_volume(id: &Value) -> f32 {
+    pub unsafe fn get_volume(src: &Value) -> f32 {
         profile!("get_volume");
 
-        Self::get_mixture_by_value(id).unwrap_unchecked().volume
+        Self::get_mixture_by_src(src).unwrap_unchecked().volume
     }
 
     #[inline(always)]
@@ -177,90 +173,86 @@ impl Mixture {
     pub unsafe fn get_temperature(id: &Value) -> f32 {
         profile!("get_temperature");
 
-        Self::get_mixture_by_value(id)
-            .unwrap_unchecked()
-            .temperature
+        Self::get_mixture_by_src(id).unwrap_unchecked().temperature
     }
 
     #[inline(always)]
     #[must_use]
-    pub unsafe fn get_last_share(id: &Value) -> f32 {
+    pub unsafe fn get_last_share(src: &Value) -> f32 {
         profile!("get_last_share");
 
-        Self::get_mixture_by_value(id).unwrap_unchecked().last_share
+        Self::get_mixture_by_src(src).unwrap_unchecked().last_share
     }
 
     #[inline(always)]
-    pub unsafe fn set_oxygen(id: &Value, oxygen: f32) {
+    pub unsafe fn set_oxygen(src: &Value, oxygen: f32) {
         profile!("set_oxygen");
 
-        Self::get_mixture_mut_by_value(id).unwrap_unchecked().oxygen = oxygen;
+        Self::get_mixture_mut_by_src(src).unwrap_unchecked().oxygen = oxygen;
     }
 
     #[inline(always)]
-    pub unsafe fn set_carbon_dioxide(id: &Value, carbon_dioxide: f32) {
+    pub unsafe fn set_carbon_dioxide(src: &Value, carbon_dioxide: f32) {
         profile!("set_carbon_dioxide");
 
-        Self::get_mixture_mut_by_value(id)
+        Self::get_mixture_mut_by_src(src)
             .unwrap_unchecked()
             .carbon_dioxide = carbon_dioxide;
     }
 
     #[inline(always)]
-    pub unsafe fn set_nitrogen(id: &Value, nitrogen: f32) {
+    pub unsafe fn set_nitrogen(src: &Value, nitrogen: f32) {
         profile!("set_nitrogen");
 
-        Self::get_mixture_mut_by_value(id)
+        Self::get_mixture_mut_by_src(src)
             .unwrap_unchecked()
             .nitrogen = nitrogen;
     }
 
     #[inline(always)]
-    pub unsafe fn set_toxins(id: &Value, toxins: f32) {
+    pub unsafe fn set_toxins(src: &Value, toxins: f32) {
         profile!("set_toxins");
 
-        Self::get_mixture_mut_by_value(id).unwrap_unchecked().toxins = toxins;
+        Self::get_mixture_mut_by_src(src).unwrap_unchecked().toxins = toxins;
     }
 
     #[inline(always)]
-    pub unsafe fn set_sleeping_agent(id: &Value, sleeping_agent: f32) {
+    pub unsafe fn set_sleeping_agent(src: &Value, sleeping_agent: f32) {
         profile!("set_sleeping_agent");
 
-        Self::get_mixture_mut_by_value(id)
+        Self::get_mixture_mut_by_src(src)
             .unwrap_unchecked()
             .sleeping_agent = sleeping_agent;
     }
 
     #[inline(always)]
-    pub unsafe fn set_agent_b(id: &Value, agent_b: f32) {
+    pub unsafe fn set_agent_b(src: &Value, agent_b: f32) {
         profile!("set_agent_b");
 
-        Self::get_mixture_mut_by_value(id)
-            .unwrap_unchecked()
-            .agent_b = agent_b;
+        Self::get_mixture_mut_by_src(src).unwrap_unchecked().agent_b = agent_b;
     }
 
     #[inline(always)]
-    pub unsafe fn set_volume(id: &Value, volume: f32) {
+    pub unsafe fn set_volume(src: &Value, volume: f32) {
         profile!("set_volume");
 
-        Self::get_mixture_mut_by_value(id).unwrap_unchecked().volume = volume;
+        Self::get_mixture_mut_by_src(src).unwrap_unchecked().volume = volume;
     }
 
     #[inline(always)]
-    pub unsafe fn set_temperature(id: &Value, temperature: f32) {
+    pub unsafe fn set_temperature(src: &Value, temperature: f32) {
         profile!("set_temperature");
 
-        Self::get_mixture_mut_by_value(id)
+        Self::get_mixture_mut_by_src(src)
             .unwrap_unchecked()
             .temperature = temperature;
     }
 
     #[inline(always)]
-    pub unsafe fn set_last_share(id: &Value, last_share: f32) {
+    pub unsafe fn set_last_share(src: &Value, last_share: f32) {
         profile!("set_last_share");
 
-        Self::get_mixture_mut_by_value(id)
+        Self::get_mixture_mut_by_src(src)
             .unwrap_unchecked()
             .last_share = last_share;
     }
@@ -481,7 +473,7 @@ impl Mixture {
     }
 
     #[inline(always)]
-    pub fn remove(&mut self, removed_id: usize, mut amount: f32) {
+    pub fn remove(&mut self, removed_id: u32, mut amount: f32) {
         profile!("remove");
 
         let sum = self.get_total_moles();
@@ -513,7 +505,7 @@ impl Mixture {
     }
 
     #[inline(always)]
-    pub fn remove_ratio(&mut self, removed_id: usize, mut ratio: f32) {
+    pub fn remove_ratio(&mut self, removed_id: u32, mut ratio: f32) {
         profile!("remove_ratio");
 
         let mut removed = unsafe {
@@ -546,10 +538,8 @@ impl Mixture {
     }
 
     #[inline(always)]
-    pub fn copy_from(&mut self, sample_id: usize) {
+    pub fn copy_from(&mut self, sample: MixtureRef) {
         profile!("copy_from");
-
-        let sample = unsafe { Self::get_mixture_by_id(sample_id) };
 
         self.oxygen = sample.oxygen;
         self.carbon_dioxide = sample.carbon_dioxide;
@@ -588,30 +578,22 @@ impl Mixture {
     // TODO: Make a method looks much more minimalistic.
     #[allow(clippy::too_many_arguments)]
     #[inline(always)]
-    pub fn check_turf(
-        &self,
-        model_oxygen: f32,
-        model_carbon_dioxide: f32,
-        model_nitrogen: f32,
-        model_toxins: f32,
-        model_sleeping_agent: f32,
-        model_agent_b: f32,
-        model_temperature: f32,
-        atmos_adjacent_turfs: f32,
-    ) -> bool {
+    pub fn check_turf(&self, turf_model: Turf, atmos_adjacent_turfs: f32) -> bool {
         profile!("check_turf");
 
-        let delta_oxygen = (self.oxygen_archived - model_oxygen) / (atmos_adjacent_turfs + 1.0);
-        let delta_carbon_dioxide =
-            (self.carbon_dioxide_archived - model_carbon_dioxide) / (atmos_adjacent_turfs + 1.0);
+        let delta_oxygen =
+            (self.oxygen_archived - turf_model.oxygen) / (atmos_adjacent_turfs + 1.0);
+        let delta_carbon_dioxide = (self.carbon_dioxide_archived - turf_model.carbon_dioxide)
+            / (atmos_adjacent_turfs + 1.0);
         let delta_nitrogen =
-            (self.nitrogen_archived - model_nitrogen) / (atmos_adjacent_turfs + 1.0);
-        let delta_toxins = (self.toxins_archived - model_toxins) / (atmos_adjacent_turfs + 1.0);
-        let delta_sleeping_agent =
-            (self.sleeping_agent_archived - model_sleeping_agent) / (atmos_adjacent_turfs + 1.0);
-        let delta_agent_b = (self.agent_b_archived - model_agent_b) / (atmos_adjacent_turfs + 1.0);
-
-        let delta_temperature = self.temperature_archived - model_temperature;
+            (self.nitrogen_archived - turf_model.nitrogen) / (atmos_adjacent_turfs + 1.0);
+        let delta_toxins =
+            (self.toxins_archived - turf_model.toxins) / (atmos_adjacent_turfs + 1.0);
+        let delta_sleeping_agent = (self.sleeping_agent_archived - turf_model.sleeping_agent)
+            / (atmos_adjacent_turfs + 1.0);
+        let delta_agent_b =
+            (self.agent_b_archived - turf_model.agent_b) / (atmos_adjacent_turfs + 1.0);
+        let delta_temperature = self.temperature_archived - turf_model.temperature;
 
         // FIXME: Potentially, can be minimized and etc., anyway, this is 💀
         if ((delta_oxygen.abs() > MINIMUM_AIR_TO_SUSPEND)

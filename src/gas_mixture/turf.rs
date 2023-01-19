@@ -20,8 +20,6 @@ impl Turf {
     const SLEEPING_AGENT: &str = "sleeping_agent";
     const AGENT_B: &str = "agent_b";
     const TEMPERATURE: &str = "temperature";
-    const THERMAL_CONDUCTIVITY: &str = "thermal_conductivity";
-    const HEAT_CAPACITY: &str = "heat_capacity";
 
     #[inline(always)]
     #[must_use]
@@ -49,19 +47,5 @@ impl Turf {
                 .get_number(string_ref!(Self::TEMPERATURE))
                 .unwrap_unchecked(),
         }
-    }
-
-    #[inline(always)]
-    #[must_use]
-    pub unsafe fn get_thermal_conductivity(turf: &Value) -> f32 {
-        turf.get_number(string_ref!(Self::THERMAL_CONDUCTIVITY))
-            .unwrap_unchecked()
-    }
-
-    #[inline(always)]
-    #[must_use]
-    pub unsafe fn get_heat_capacity(turf: &Value) -> f32 {
-        turf.get_number(string_ref!(Self::HEAT_CAPACITY))
-            .unwrap_unchecked()
     }
 }
