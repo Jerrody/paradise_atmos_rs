@@ -184,7 +184,7 @@ pub fn set_last_share(value: &Value) {
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/get_heat_capacity")]
+#[hook("/datum/gas_mixture/proc/heat_capacity")]
 pub fn get_heat_capacity() {
     profile_proc!("get_heat_capacity");
 
@@ -197,7 +197,7 @@ pub fn get_heat_capacity() {
     value!(heat_capacity)
 }
 
-#[hook("/datum/gas_mixture/proc/get_total_moles")]
+#[hook("/datum/gas_mixture/proc/total_moles")]
 pub fn get_total_moles() {
     profile_proc!("get_total_moles");
 
@@ -210,7 +210,7 @@ pub fn get_total_moles() {
     value!(total_moles)
 }
 
-#[hook("/datum/gas_mixture/proc/get_total_trace_moles")]
+#[hook("/datum/gas_mixture/proc/total_trace_moles")]
 pub fn get_total_trace_moles() {
     profile_proc!("get_total_trace_moles");
 
@@ -223,7 +223,7 @@ pub fn get_total_trace_moles() {
     value!(total_trace_moles)
 }
 
-#[hook("/datum/gas_mixture/proc/get_pressure")]
+#[hook("/datum/gas_mixture/proc/return_pressure")]
 pub fn get_pressure() {
     profile_proc!("get_pressure");
 
@@ -251,7 +251,7 @@ pub fn return_volume() {
     value!(volume)
 }
 
-#[hook("/datum/gas_mixture/proc/get_thermal_energy")]
+#[hook("/datum/gas_mixture/proc/thermal_energy")]
 pub fn get_thermal_energy() {
     profile_proc!("get_thermal_energy");
 
