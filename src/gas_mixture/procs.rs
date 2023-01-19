@@ -310,7 +310,7 @@ pub fn check_turf(turf_model: &Value, atmos_adjacent_turfs: &Value) {
     let atmos_adjacent_turfs = unsafe { atmos_adjacent_turfs.as_number().unwrap_unchecked() };
 
     value!(unsafe {
-        Mixture::get_mixture_mut_by_src(src)
+        Mixture::get_mixture_by_src(src)
             .unwrap_unchecked()
             .check_turf(turf_model, atmos_adjacent_turfs)
     })
