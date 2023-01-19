@@ -1,6 +1,7 @@
 use crate::gas_mixture::constants::*;
 
 const QUANTIZE_NEAREST: f32 = 0.0001;
+
 pub mod macros {
     /// #### Description
     /// Creates a `BYOND`'s string.
@@ -32,8 +33,9 @@ pub mod macros {
 
 // FIXME: Can be possible reason of unexpected behaviour. Check if result is expected.
 #[inline(always)]
+#[must_use]
 pub fn quantize(value: f32) -> f32 {
-    QUANTIZE_NEAREST * (value / QUANTIZE_NEAREST).round()
+    ((value + (QUANTIZE_NEAREST / 2.0)).div_euclid(QUANTIZE_NEAREST)) * QUANTIZE_NEAREST
 }
 
 #[inline(always)]

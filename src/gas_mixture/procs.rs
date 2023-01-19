@@ -2,6 +2,8 @@
 // use crate::value;
 // use auxtools::*;
 
+pub use super::GAS_MIXTURES;
+
 // // #[hook("/datum/gas_mixture/proc/heat_capacity_rs")]
 // // pub fn heat_capacity() {
 // //     value!(MixtureNative::get_heat_capacity(src))
