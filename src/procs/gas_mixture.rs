@@ -1,8 +1,8 @@
 use auxtools::*;
 
-use crate::{null, profile_proc, value};
-
-use super::{turf::Turf, Mixture};
+use crate::gas_mixture::MIXTURES;
+use crate::turf::Turf;
+use crate::{id, null, profile_proc, value};
 
 const DEFAULT_ATMOS_ADJACENT_TURFS: f32 = 4.0;
 
@@ -26,7 +26,7 @@ pub fn enable_tracy() {
 pub fn register() {
     profile_proc!("register");
 
-    unsafe { Mixture::register(src) };
+    unsafe { MIXTURES.register(src) };
 
     null!()
 }
@@ -35,7 +35,7 @@ pub fn register() {
 pub fn unregister() {
     profile_proc!("unregister");
 
-    unsafe { Mixture::unregister(src) };
+    unsafe { MIXTURES.unregister(src) };
 
     null!()
 }
@@ -44,70 +44,70 @@ pub fn unregister() {
 pub fn get_oxygen() {
     profile_proc!("get_oxygen");
 
-    value!(unsafe { Mixture::get_oxygen(src) })
+    value!(unsafe { MIXTURES.get_oxygen(id!(src)) })
 }
 
 #[hook("/datum/gas_mixture/proc/get_carbon_dioxide")]
 pub fn get_carbon_dioxide() {
     profile_proc!("get_carbon_dioxide");
 
-    value!(unsafe { Mixture::get_carbon_dioxide(src) })
+    value!(unsafe { MIXTURES.get_carbon_dioxide(id!(src)) })
 }
 
 #[hook("/datum/gas_mixture/proc/get_nitrogen")]
 pub fn get_nitrogen() {
     profile_proc!("get_nitrogen");
 
-    value!(unsafe { Mixture::get_nitrogen(src) })
+    value!(unsafe { MIXTURES.get_nitrogen(id!(src)) })
 }
 
 #[hook("/datum/gas_mixture/proc/get_toxins")]
 pub fn get_toxins() {
     profile_proc!("get_toxins");
 
-    value!(unsafe { Mixture::get_toxins(src) })
+    value!(unsafe { MIXTURES.get_toxins(id!(src)) })
 }
 
 #[hook("/datum/gas_mixture/proc/get_sleeping_agent")]
 pub fn get_sleeping_agent() {
     profile_proc!("get_sleeping_agent");
 
-    value!(unsafe { Mixture::get_sleeping_agent(src) })
+    value!(unsafe { MIXTURES.get_sleeping_agent(id!(src)) })
 }
 
 #[hook("/datum/gas_mixture/proc/get_agent_b")]
 pub fn get_agent_b() {
     profile_proc!("get_agent_b");
 
-    value!(unsafe { Mixture::get_agent_b(src) })
+    value!(unsafe { MIXTURES.get_agent_b(id!(src)) })
 }
 
 #[hook("/datum/gas_mixture/proc/get_volume")]
 pub fn get_volume() {
     profile_proc!("get_volume");
 
-    value!(unsafe { Mixture::get_volume(src) })
+    value!(unsafe { MIXTURES.get_volume(id!(src)) })
 }
 
 #[hook("/datum/gas_mixture/proc/get_temperature")]
 pub fn get_temperature() {
     profile_proc!("get_temperature");
 
-    value!(unsafe { Mixture::get_temperature(src) })
+    value!(unsafe { MIXTURES.get_temperature(id!(src)) })
 }
 
 #[hook("/datum/gas_mixture/proc/get_last_share")]
 pub fn get_last_share() {
     profile_proc!("get_last_share");
 
-    value!(unsafe { Mixture::get_last_share(src) })
+    value!(unsafe { MIXTURES.get_last_share(id!(src)) })
 }
 
 #[hook("/datum/gas_mixture/proc/set_oxygen")]
 pub fn set_oxygen(value: &Value) {
     profile_proc!("set_oxygen");
 
-    unsafe { Mixture::set_oxygen(src, value.as_number().unwrap_unchecked()) }
+    unsafe { MIXTURES.set_oxygen(id!(src), value.as_number().unwrap_unchecked()) }
 
     null!()
 }
@@ -116,7 +116,7 @@ pub fn set_oxygen(value: &Value) {
 pub fn set_carbon_dioxide(value: &Value) {
     profile_proc!("set_carbon_dioxide");
 
-    unsafe { Mixture::set_carbon_dioxide(src, value.as_number().unwrap_unchecked()) }
+    unsafe { MIXTURES.set_carbon_dioxide(id!(src), value.as_number().unwrap_unchecked()) }
 
     null!()
 }
@@ -125,7 +125,7 @@ pub fn set_carbon_dioxide(value: &Value) {
 pub fn set_nitrogen(value: &Value) {
     profile_proc!("set_nitrogen");
 
-    unsafe { Mixture::set_nitrogen(src, value.as_number().unwrap_unchecked()) }
+    unsafe { MIXTURES.set_nitrogen(id!(src), value.as_number().unwrap_unchecked()) }
 
     null!()
 }
@@ -134,7 +134,7 @@ pub fn set_nitrogen(value: &Value) {
 pub fn set_toxins(value: &Value) {
     profile_proc!("set_toxins");
 
-    unsafe { Mixture::set_toxins(src, value.as_number().unwrap_unchecked()) }
+    unsafe { MIXTURES.set_toxins(id!(src), value.as_number().unwrap_unchecked()) }
 
     null!()
 }
@@ -143,7 +143,7 @@ pub fn set_toxins(value: &Value) {
 pub fn set_sleeping_agent(value: &Value) {
     profile_proc!("set_sleeping_agent");
 
-    unsafe { Mixture::set_sleeping_agent(src, value.as_number().unwrap_unchecked()) }
+    unsafe { MIXTURES.set_sleeping_agent(id!(src), value.as_number().unwrap_unchecked()) }
 
     null!()
 }
@@ -152,7 +152,7 @@ pub fn set_sleeping_agent(value: &Value) {
 pub fn set_agent_b(value: &Value) {
     profile_proc!("set_agent_b");
 
-    unsafe { Mixture::set_agent_b(src, value.as_number().unwrap_unchecked()) }
+    unsafe { MIXTURES.set_agent_b(id!(src), value.as_number().unwrap_unchecked()) }
 
     null!()
 }
@@ -161,7 +161,7 @@ pub fn set_agent_b(value: &Value) {
 pub fn set_volume(value: &Value) {
     profile_proc!("set_volume");
 
-    unsafe { Mixture::set_volume(src, value.as_number().unwrap_unchecked()) }
+    unsafe { MIXTURES.set_volume(id!(src), value.as_number().unwrap_unchecked()) }
 
     null!()
 }
@@ -170,7 +170,7 @@ pub fn set_volume(value: &Value) {
 pub fn set_temperature(value: &Value) {
     profile_proc!("set_temperature");
 
-    unsafe { Mixture::set_temperature(src, value.as_number().unwrap_unchecked()) }
+    unsafe { MIXTURES.set_temperature(id!(src), value.as_number().unwrap_unchecked()) }
 
     null!()
 }
@@ -179,7 +179,7 @@ pub fn set_temperature(value: &Value) {
 pub fn set_last_share(value: &Value) {
     profile_proc!("set_last_share");
 
-    unsafe { Mixture::set_last_share(src, value.as_number().unwrap_unchecked()) }
+    unsafe { MIXTURES.set_last_share(id!(src), value.as_number().unwrap_unchecked()) }
 
     null!()
 }
@@ -188,52 +188,28 @@ pub fn set_last_share(value: &Value) {
 pub fn get_heat_capacity() {
     profile_proc!("get_heat_capacity");
 
-    let heat_capacity = unsafe {
-        Mixture::get_mixture_by_src(src)
-            .unwrap_unchecked()
-            .get_heat_capacity()
-    };
-
-    value!(heat_capacity)
+    value!(unsafe { MIXTURES.get_heat_capacity(id!(src)) })
 }
 
 #[hook("/datum/gas_mixture/proc/total_moles")]
 pub fn get_total_moles() {
     profile_proc!("get_total_moles");
 
-    let total_moles = unsafe {
-        Mixture::get_mixture_by_src(src)
-            .unwrap_unchecked()
-            .get_total_moles()
-    };
-
-    value!(total_moles)
+    value!(unsafe { MIXTURES.get_total_moles(id!(src)) })
 }
 
 #[hook("/datum/gas_mixture/proc/total_trace_moles")]
 pub fn get_total_trace_moles() {
     profile_proc!("get_total_trace_moles");
 
-    let total_trace_moles = unsafe {
-        Mixture::get_mixture_by_src(src)
-            .unwrap_unchecked()
-            .get_total_trace_moles()
-    };
-
-    value!(total_trace_moles)
+    value!(unsafe { MIXTURES.get_total_trace_moles(id!(src)) })
 }
 
 #[hook("/datum/gas_mixture/proc/return_pressure")]
 pub fn get_pressure() {
     profile_proc!("get_pressure");
 
-    let pressure = unsafe {
-        Mixture::get_mixture_by_src(src)
-            .unwrap_unchecked()
-            .get_pressure()
-    };
-
-    value!(pressure)
+    value!(unsafe { MIXTURES.get_pressure(id!(src)) })
 }
 
 // I'm not sure that this thing was made by a person with good mental health in DM.
@@ -242,48 +218,28 @@ pub fn get_pressure() {
 pub fn return_volume() {
     profile_proc!("return_volume");
 
-    let volume = unsafe {
-        Mixture::get_mixture_by_src(src)
-            .unwrap_unchecked()
-            .return_volume()
-    };
-
-    value!(volume)
+    value!(unsafe { MIXTURES.return_volume(id!(src)) })
 }
 
 #[hook("/datum/gas_mixture/proc/thermal_energy")]
 pub fn get_thermal_energy() {
     profile_proc!("get_thermal_energy");
 
-    let thermal_energy = unsafe {
-        Mixture::get_mixture_by_src(src)
-            .unwrap_unchecked()
-            .get_thermal_energy()
-    };
-
-    value!(thermal_energy)
+    value!(unsafe { MIXTURES.get_thermal_energy(id!(src)) })
 }
 
 #[hook("/datum/gas_mixture/proc/react")]
 pub fn react() {
     profile_proc!("react");
 
-    value!(unsafe {
-        Mixture::get_mixture_mut_by_src(src)
-            .unwrap_unchecked()
-            .react()
-    })
+    value!(unsafe { MIXTURES.react(id!(src)) })
 }
 
 #[hook("/datum/gas_mixture/proc/archive")]
 pub fn archive() {
     profile_proc!("archive");
 
-    unsafe {
-        Mixture::get_mixture_mut_by_src(src)
-            .unwrap_unchecked()
-            .archive()
-    }
+    unsafe { MIXTURES.archive(id!(src)) }
 
     null!()
 }
@@ -292,11 +248,7 @@ pub fn archive() {
 pub fn merge(giver: &Value) {
     profile_proc!("merge");
 
-    unsafe {
-        Mixture::get_mixture_mut_by_src(src)
-            .unwrap_unchecked()
-            .merge(Mixture::get_mixture_mut_by_src(giver))
-    }
+    unsafe { MIXTURES.merge(id!(src), id!(giver)) }
 
     null!()
 }
@@ -306,9 +258,11 @@ pub fn remove(removed: &Value, amount: &Value) {
     profile_proc!("remove");
 
     unsafe {
-        Mixture::get_mixture_mut_by_src(src)
-            .unwrap_unchecked()
-            .remove(removed.raw.data.id, amount.as_number().unwrap_unchecked())
+        MIXTURES.remove(
+            id!(src),
+            id!(removed),
+            amount.as_number().unwrap_unchecked(),
+        );
     }
 
     null!()
@@ -319,9 +273,7 @@ pub fn remove_ratio(removed: u32, mut ratio: &Value) {
     profile_proc!("remove_ratio");
 
     unsafe {
-        Mixture::get_mixture_mut_by_src(src)
-            .unwrap_unchecked()
-            .remove_ratio(removed.raw.data.id, ratio.as_number().unwrap_unchecked())
+        MIXTURES.remove_ratio(id!(src), id!(removed), ratio.as_number().unwrap_unchecked());
     }
 
     null!()
@@ -332,9 +284,7 @@ pub fn copy_from(sample: &Value) {
     profile_proc!("copy_from");
 
     unsafe {
-        Mixture::get_mixture_mut_by_src(src)
-            .unwrap_unchecked()
-            .copy_from(Mixture::get_mixture_by_src(sample).unwrap_unchecked())
+        MIXTURES.copy_from(id!(src), id!(sample));
     }
 
     null!()
@@ -358,13 +308,12 @@ pub fn copy_from_turf(
     };
 
     unsafe {
-        Mixture::get_mixture_mut_by_src(src)
-            .unwrap_unchecked()
-            .copy_from_turf(
-                turf_model,
-                initial_model_temperature,
-                initial_model_parent_temperature,
-            )
+        MIXTURES.copy_from_turf(
+            id!(src),
+            turf_model,
+            initial_model_temperature,
+            initial_model_parent_temperature,
+        )
     }
 
     null!()
@@ -380,9 +329,7 @@ pub fn check_turf(turf_model: &Value, atmos_adjacent_turfs: &Value) {
         .unwrap_or(DEFAULT_ATMOS_ADJACENT_TURFS);
 
     value!(unsafe {
-        Mixture::get_mixture_by_src(src)
-            .unwrap_unchecked()
-            .check_turf(turf_model, atmos_adjacent_turfs)
+        MIXTURES.check_turf(src.raw.data.id as usize, turf_model, atmos_adjacent_turfs)
     })
 }
 
@@ -392,11 +339,7 @@ pub fn check_turf_total(turf_model: &Value) {
 
     let turf_model = unsafe { Turf::new(turf_model) };
 
-    value!(unsafe {
-        Mixture::get_mixture_by_src(src)
-            .unwrap_unchecked()
-            .check_turf_total(turf_model)
-    })
+    value!(unsafe { MIXTURES.check_turf_total(id!(src), turf_model) })
 }
 
 #[hook("/datum/gas_mixture/proc/share")]
@@ -407,14 +350,7 @@ pub fn share(sharer: &Value, atmos_adjacent_turfs: &Value) {
         .as_number()
         .unwrap_or(DEFAULT_ATMOS_ADJACENT_TURFS);
 
-    value!(unsafe {
-        Mixture::get_mixture_mut_by_src(src)
-            .unwrap_unchecked()
-            .share(
-                Mixture::get_mixture_mut_by_src(sharer),
-                atmos_adjacent_turfs,
-            )
-    })
+    value!(unsafe { MIXTURES.share(id!(src), id!(sharer), atmos_adjacent_turfs) })
 }
 
 #[hook("/datum/gas_mixture/proc/temperature_share")]
@@ -424,12 +360,7 @@ pub fn temperature_share(sharer: &Value, conduction_coefficient: &Value) {
     let conduction_coefficient = unsafe { conduction_coefficient.as_number().unwrap_unchecked() };
 
     unsafe {
-        Mixture::get_mixture_mut_by_src(src)
-            .unwrap_unchecked()
-            .temperature_share(
-                &mut Mixture::get_mixture_mut_by_src(sharer).unwrap_unchecked(),
-                conduction_coefficient,
-            )
+        MIXTURES.temperature_share(id!(src), id!(sharer), conduction_coefficient);
     }
 
     null!()
@@ -453,14 +384,13 @@ pub fn mimic(
         .unwrap_or(DEFAULT_ATMOS_ADJACENT_TURFS);
 
     value!(unsafe {
-        Mixture::get_mixture_mut_by_src(src)
-            .unwrap_unchecked()
-            .mimic(
-                turf_model,
-                model_thermal_conductivity,
-                model_heat_capacity,
-                atmos_adjacent_turfs,
-            )
+        MIXTURES.mimic(
+            id!(src),
+            turf_model,
+            model_thermal_conductivity,
+            model_heat_capacity,
+            atmos_adjacent_turfs,
+        )
     })
 }
 
@@ -477,13 +407,12 @@ pub fn temperature_mimic(
     let conduction_coefficient = unsafe { conduction_coefficient.as_number().unwrap_unchecked() };
 
     unsafe {
-        Mixture::get_mixture_mut_by_src(src)
-            .unwrap_unchecked()
-            .temperature_mimic(
-                model_temperature,
-                model_heat_capacity,
-                conduction_coefficient,
-            )
+        MIXTURES.temperature_mimic(
+            id!(src),
+            model_temperature,
+            model_heat_capacity,
+            conduction_coefficient,
+        );
     }
 
     null!()
@@ -496,9 +425,7 @@ pub fn temperature_turf_share(turf_sharer: &Value, conduction_coefficient: &Valu
     let conduction_coefficient = unsafe { conduction_coefficient.as_number().unwrap_unchecked() };
 
     unsafe {
-        Mixture::get_mixture_mut_by_src(src)
-            .unwrap_unchecked()
-            .temperature_turf_share(turf_sharer, conduction_coefficient)
+        MIXTURES.temperature_turf_share(id!(src), turf_sharer, conduction_coefficient);
     }
 
     null!()
@@ -508,11 +435,7 @@ pub fn temperature_turf_share(turf_sharer: &Value, conduction_coefficient: &Valu
 pub fn compare(sample: &Value) {
     profile_proc!("compare");
 
-    value!(unsafe {
-        Mixture::get_mixture_by_src(src)
-            .unwrap_unchecked()
-            .compare(Mixture::get_mixture_by_src(sample).unwrap_unchecked())
-    })
+    value!(unsafe { MIXTURES.compare(id!(src), id!(sample)) })
 }
 
 #[hook("/datum/gas_mixture/proc/get_breath_partial_pressure")]
@@ -520,9 +443,7 @@ pub fn get_breath_partial_pressure(gas_pressure: &Value) {
     profile_proc!("get_breath_partial_pressure");
 
     value!(unsafe {
-        Mixture::get_mixture_by_src(src)
-            .unwrap_unchecked()
-            .get_breath_partial_pressure(gas_pressure.as_number().unwrap_unchecked())
+        MIXTURES.get_breath_partial_pressure(id!(src), gas_pressure.as_number().unwrap_unchecked())
     })
 }
 
@@ -532,8 +453,6 @@ pub fn get_true_breath_pressure(breath_pp: &Value) {
     profile_proc!("get_true_breath_pressure");
 
     value!(unsafe {
-        Mixture::get_mixture_by_src(src)
-            .unwrap_unchecked()
-            .get_true_breath_pressure(breath_pp.as_number().unwrap_unchecked())
+        MIXTURES.get_true_breath_pressure(id!(src), breath_pp.as_number().unwrap_unchecked())
     })
 }

@@ -1,46 +1,45 @@
-mod constants;
-pub mod procs;
-mod turf;
-mod utils;
+mod getters;
+mod setters;
 
-use constants::*;
-use utils::*;
-
-use auxtools::{StringRef, Value};
-use dashmap::DashMap;
-use once_cell::sync::Lazy;
-
+use crate::constants::*;
+use crate::turf::Turf;
+use crate::utils::*;
 use crate::{profile, string_ref};
 
-use self::turf::Turf;
+use once_cell::unsync::Lazy;
 
-type MixtureRef<'a> = dashmap::mapref::one::Ref<'a, u32, Mixture, ahash::RandomState>;
-type MixtureRefMut<'a> = dashmap::mapref::one::RefMut<'a, u32, Mixture, ahash::RandomState>;
+use auxtools::{StringRef, Value};
 
-pub static GAS_MIXTURES: Lazy<DashMap<u32, Mixture, ahash::RandomState>> = Lazy::new(|| {
-    let hasher = ahash::RandomState::new();
-    DashMap::with_capacity_and_hasher(Mixture::DEFAULT_ALLOCATED_GAS_MIXTURES_COUNT, hasher)
-});
+/// ### Description
+/// SOA (struct of arrays). Used for efficient cache utilization.
+/// ### Why?
+/// You would say that it's less comfortable to use `gas_mixture` and why this unnecessary complexity.
+/// The answer is to load components (aka `oxygen`, `carbon_dioxide`, and others) that need to use, with no extra load.
+/// Imagine that you use simple `Vec<Mixture>` and need to use the `return_volume` method, so, you index an instance of `Mixture`.
+/// So, you load to the cache whole **68** `bytes`! And use only 4 bytes :) == waste CPU time on useless action.
+/// I hope I answered your question!
+pub static mut MIXTURES: Lazy<Mixture> = Lazy::new(Mixture::new);
 
 #[derive(Debug, Default)]
 pub struct Mixture {
-    oxygen: f32,
-    carbon_dioxide: f32,
-    nitrogen: f32,
-    toxins: f32,
-    sleeping_agent: f32,
-    agent_b: f32,
-    volume: f32,
-    temperature: f32, //in Kelvin
-    last_share: f32,
-    oxygen_archived: f32,
-    carbon_dioxide_archived: f32,
-    nitrogen_archived: f32,
-    toxins_archived: f32,
-    sleeping_agent_archived: f32,
-    agent_b_archived: f32,
-    temperature_archived: f32,
-    fuel_burnt: f32,
+    oxygen: Vec<f32>,
+    carbon_dioxide: Vec<f32>,
+    nitrogen: Vec<f32>,
+    toxins: Vec<f32>,
+    sleeping_agent: Vec<f32>,
+    agent_b: Vec<f32>,
+    volume: Vec<f32>,
+    temperature: Vec<f32>, //in Kelvin
+    last_share: Vec<f32>,
+    oxygen_archived: Vec<f32>,
+    carbon_dioxide_archived: Vec<f32>,
+    nitrogen_archived: Vec<f32>,
+    toxins_archived: Vec<f32>,
+    sleeping_agent_archived: Vec<f32>,
+    agent_b_archived: Vec<f32>,
+    temperature_archived: Vec<f32>,
+    fuel_burnt: Vec<f32>,
+    is_initialized: Vec<bool>,
 }
 
 impl Mixture {
@@ -48,273 +47,160 @@ impl Mixture {
     /// Pre-allocates a 1_000_000 `gas_mixtures`.
     /// Needs for avoding a reallocation a whole [`GAS_MIXTURES`] with each creaing of an instance of `gas_mixture`.
     /// ### Size
-    /// Initial size of [`GAS_MIXTURES`] is 68 MBs.
+    /// Initial size of [`MIXTURES`] is 68 MBs.
     const DEFAULT_ALLOCATED_GAS_MIXTURES_COUNT: usize = 1_000_000;
     /// #### Description
     /// Liters in a cell.
     const CELL_VOLUME: f32 = 2500.0;
 
+    /// TODO: Add an `cfg_attr` to disable an `inline` when `profile` or `profile_proc` enabled.
     #[inline(always)]
+    #[must_use]
     fn new() -> Self {
+        let vec_of_zeros = vec![f32::default(); Self::DEFAULT_ALLOCATED_GAS_MIXTURES_COUNT];
+        let vec_of_cell_volumes =
+            vec![Self::CELL_VOLUME; Self::DEFAULT_ALLOCATED_GAS_MIXTURES_COUNT];
+        let vec_of_bools = vec![Default::default(); Self::DEFAULT_ALLOCATED_GAS_MIXTURES_COUNT];
+
         Self {
-            volume: Self::CELL_VOLUME,
-            ..Default::default()
+            oxygen: vec_of_zeros.clone(),
+            carbon_dioxide: vec_of_zeros.clone(),
+            nitrogen: vec_of_zeros.clone(),
+            toxins: vec_of_zeros.clone(),
+            sleeping_agent: vec_of_zeros.clone(),
+            agent_b: vec_of_zeros.clone(),
+            volume: vec_of_cell_volumes,
+            temperature: vec_of_zeros.clone(),
+            last_share: vec_of_zeros.clone(),
+            oxygen_archived: vec_of_zeros.clone(),
+            carbon_dioxide_archived: vec_of_zeros.clone(),
+            nitrogen_archived: vec_of_zeros.clone(),
+            toxins_archived: vec_of_zeros.clone(),
+            sleeping_agent_archived: vec_of_zeros.clone(),
+            agent_b_archived: vec_of_zeros.clone(),
+            temperature_archived: vec_of_zeros.clone(),
+            fuel_burnt: vec_of_zeros,
+            is_initialized: vec_of_bools,
         }
     }
 
     #[inline(always)]
-    pub unsafe fn register(src: &Value) {
+    pub unsafe fn register(&mut self, src: &Value) {
+        // FIXME: Won't work as expected due to `inline` fix with adding additional `cfg_attr`.
         profile!("register");
 
-        let id = src.raw.data.id;
+        let id = src.raw.data.id as usize;
 
-        GAS_MIXTURES.insert(id, Self::new());
+        *self.is_initialized.get_unchecked_mut(id) = true;
     }
 
     #[inline(always)]
-    pub unsafe fn unregister(src: &Value) {
+    pub unsafe fn unregister(&mut self, src: &Value) {
         profile!("unregister");
 
-        let id = src.raw.data.id;
+        let id = src.raw.data.id as usize;
 
-        GAS_MIXTURES.remove(&id).unwrap_unchecked();
+        *self.is_initialized.get_unchecked_mut(id) = false;
+
+        self.set_oxygen(id, 0.0);
+        self.set_carbon_dioxide(id, 0.0);
+        self.set_nitrogen(id, 0.0);
+        self.set_toxins(id, 0.0);
+        self.set_sleeping_agent(id, 0.0);
+        self.set_agent_b(id, 0.0);
+        self.set_volume(id, Self::CELL_VOLUME);
+        self.set_temperature(id, 0.0); //in Kelvin
+        self.set_last_share(id, 0.0);
+        self.set_oxygen_archived(id, 0.0);
+        self.set_carbon_dioxide_archived(id, 0.0);
+        self.set_nitrogen_archived(id, 0.0);
+        self.set_toxins_archived(id, 0.0);
+        self.set_sleeping_agent_archived(id, 0.0);
+        self.set_agent_b_archived(id, 0.0);
+        self.set_temperature_archived(id, 0.0);
+        self.set_fuel_burnt(id, 0.0);
+    }
+
+    #[inline(always)]
+    pub fn unregister_by_id(&mut self, id: usize) {
+        profile!("unregister");
+
+        unsafe {
+            *self.is_initialized.get_unchecked_mut(id) = false;
+        }
     }
 
     #[inline(always)]
     #[must_use]
-    pub unsafe fn get_mixture_by_src(src: &Value) -> Option<MixtureRef> {
-        profile!("get_mixture_by_value");
-
-        let id = src.raw.data.id;
-
-        GAS_MIXTURES.get(&id)
-    }
-
-    #[inline(always)]
-    #[must_use]
-    pub unsafe fn get_mixture_mut_by_src(src: &Value) -> Option<MixtureRefMut> {
-        profile!("get_mixture_mut_by_value");
-
-        let id = src.raw.data.id;
-
-        GAS_MIXTURES.get_mut(&id)
-    }
-
-    #[inline(always)]
-    #[must_use]
-    pub unsafe fn get_mixture_mut_by_id<'a>(id: u32) -> Option<MixtureRefMut<'a>> {
-        profile!("get_mixture_mut_by_id");
-
-        GAS_MIXTURES.get_mut(&id)
-    }
-
-    #[inline(always)]
-    #[must_use]
-    pub unsafe fn get_oxygen(src: &Value) -> f32 {
+    pub fn get_is_initialized(&self, id: usize) -> bool {
         profile!("get_oxygen");
 
-        Self::get_mixture_by_src(src).unwrap_unchecked().oxygen
+        unsafe { *self.is_initialized.get_unchecked(id) }
     }
+
+    // PROCS
+    // ============================================================================================
 
     #[inline(always)]
     #[must_use]
-    pub unsafe fn get_carbon_dioxide(src: &Value) -> f32 {
-        profile!("get_carbon_dioxide");
-
-        Self::get_mixture_by_src(src)
-            .unwrap_unchecked()
-            .carbon_dioxide
-    }
-
-    #[inline(always)]
-    #[must_use]
-    pub unsafe fn get_nitrogen(src: &Value) -> f32 {
-        profile!("get_nitrogen");
-
-        Self::get_mixture_by_src(src).unwrap_unchecked().nitrogen
-    }
-
-    #[inline(always)]
-    #[must_use]
-    pub unsafe fn get_toxins(src: &Value) -> f32 {
-        profile!("get_toxins");
-
-        Self::get_mixture_by_src(src).unwrap_unchecked().toxins
-    }
-
-    #[inline(always)]
-    #[must_use]
-    pub unsafe fn get_sleeping_agent(src: &Value) -> f32 {
-        profile!("get_sleeping_agent");
-
-        Self::get_mixture_by_src(src)
-            .unwrap_unchecked()
-            .sleeping_agent
-    }
-
-    #[inline(always)]
-    #[must_use]
-    pub unsafe fn get_agent_b(src: &Value) -> f32 {
-        profile!("get_agent_b");
-
-        Self::get_mixture_by_src(src).unwrap_unchecked().agent_b
-    }
-
-    #[inline(always)]
-    #[must_use]
-    pub unsafe fn get_volume(src: &Value) -> f32 {
-        profile!("get_volume");
-
-        Self::get_mixture_by_src(src).unwrap_unchecked().volume
-    }
-
-    #[inline(always)]
-    #[must_use]
-    pub unsafe fn get_temperature(id: &Value) -> f32 {
-        profile!("get_temperature");
-
-        Self::get_mixture_by_src(id).unwrap_unchecked().temperature
-    }
-
-    #[inline(always)]
-    #[must_use]
-    pub unsafe fn get_last_share(src: &Value) -> f32 {
-        profile!("get_last_share");
-
-        Self::get_mixture_by_src(src).unwrap_unchecked().last_share
-    }
-
-    #[inline(always)]
-    pub unsafe fn set_oxygen(src: &Value, oxygen: f32) {
-        profile!("set_oxygen");
-
-        Self::get_mixture_mut_by_src(src).unwrap_unchecked().oxygen = oxygen;
-    }
-
-    #[inline(always)]
-    pub unsafe fn set_carbon_dioxide(src: &Value, carbon_dioxide: f32) {
-        profile!("set_carbon_dioxide");
-
-        Self::get_mixture_mut_by_src(src)
-            .unwrap_unchecked()
-            .carbon_dioxide = carbon_dioxide;
-    }
-
-    #[inline(always)]
-    pub unsafe fn set_nitrogen(src: &Value, nitrogen: f32) {
-        profile!("set_nitrogen");
-
-        Self::get_mixture_mut_by_src(src)
-            .unwrap_unchecked()
-            .nitrogen = nitrogen;
-    }
-
-    #[inline(always)]
-    pub unsafe fn set_toxins(src: &Value, toxins: f32) {
-        profile!("set_toxins");
-
-        Self::get_mixture_mut_by_src(src).unwrap_unchecked().toxins = toxins;
-    }
-
-    #[inline(always)]
-    pub unsafe fn set_sleeping_agent(src: &Value, sleeping_agent: f32) {
-        profile!("set_sleeping_agent");
-
-        Self::get_mixture_mut_by_src(src)
-            .unwrap_unchecked()
-            .sleeping_agent = sleeping_agent;
-    }
-
-    #[inline(always)]
-    pub unsafe fn set_agent_b(src: &Value, agent_b: f32) {
-        profile!("set_agent_b");
-
-        Self::get_mixture_mut_by_src(src).unwrap_unchecked().agent_b = agent_b;
-    }
-
-    #[inline(always)]
-    pub unsafe fn set_volume(src: &Value, volume: f32) {
-        profile!("set_volume");
-
-        Self::get_mixture_mut_by_src(src).unwrap_unchecked().volume = volume;
-    }
-
-    #[inline(always)]
-    pub unsafe fn set_temperature(src: &Value, temperature: f32) {
-        profile!("set_temperature");
-
-        Self::get_mixture_mut_by_src(src)
-            .unwrap_unchecked()
-            .temperature = temperature;
-    }
-
-    #[inline(always)]
-    pub unsafe fn set_last_share(src: &Value, last_share: f32) {
-        profile!("set_last_share");
-
-        Self::get_mixture_mut_by_src(src)
-            .unwrap_unchecked()
-            .last_share = last_share;
-    }
-
-    #[inline(always)]
-    #[must_use]
-    fn get_heat_capacity(&self) -> f32 {
+    pub unsafe fn get_heat_capacity(&self, id: usize) -> f32 {
         profile!("get_heat_capacity");
 
-        utils::calculate_heat_capacity(
-            self.carbon_dioxide,
-            self.oxygen,
-            self.nitrogen,
-            self.toxins,
-            self.sleeping_agent,
-            self.agent_b,
+        crate::utils::calculate_heat_capacity(
+            self.get_carbon_dioxide(id),
+            self.get_oxygen(id),
+            self.get_nitrogen(id),
+            self.get_toxins(id),
+            self.get_sleeping_agent(id),
+            self.get_agent_b(id),
         )
     }
 
     #[inline(always)]
     #[must_use]
-    fn get_heat_capacity_archived(&self) -> f32 {
+    unsafe fn get_heat_capacity_archived(&self, id: usize) -> f32 {
         profile!("get_heat_capacity_archived");
 
-        utils::calculate_heat_capacity(
-            self.carbon_dioxide_archived,
-            self.oxygen_archived,
-            self.nitrogen_archived,
-            self.toxins_archived,
-            self.sleeping_agent_archived,
-            self.agent_b_archived,
+        crate::utils::calculate_heat_capacity(
+            self.get_carbon_dioxide_archived(id),
+            self.get_oxygen_archived(id),
+            self.get_nitrogen_archived(id),
+            self.get_toxins_archived(id),
+            self.get_sleeping_agent_archived(id),
+            self.get_agent_b_archived(id),
         )
     }
 
     #[inline(always)]
     #[must_use]
-    pub fn get_total_moles(&self) -> f32 {
+    pub unsafe fn get_total_moles(&self, id: usize) -> f32 {
         profile!("get_total_moles");
 
-        self.oxygen
-            + self.carbon_dioxide
-            + self.nitrogen
-            + self.toxins
-            + self.sleeping_agent
-            + self.agent_b
+        self.get_oxygen(id)
+            + self.get_carbon_dioxide(id)
+            + self.get_nitrogen(id)
+            + self.get_toxins(id)
+            + self.get_sleeping_agent(id)
+            + self.get_agent_b(id)
     }
 
     #[inline(always)]
     #[must_use]
-    pub fn get_total_trace_moles(&self) -> f32 {
+    pub unsafe fn get_total_trace_moles(&self, id: usize) -> f32 {
         profile!("get_total_trace_moles");
 
-        self.sleeping_agent + self.agent_b
+        self.get_sleeping_agent(id) + self.get_agent_b(id)
     }
 
     #[inline(always)]
     #[must_use]
-    pub fn get_pressure(&self) -> f32 {
+    pub unsafe fn get_pressure(&self, id: usize) -> f32 {
         profile!("get_pressure");
 
-        if self.volume > 0.0 {
-            return self.get_total_moles() * R_IDEAL_GAS_EQUATION * self.temperature / self.volume;
+        let volume = self.get_volume(id);
+        if volume > 0.0 {
+            return self.get_total_moles(id) * R_IDEAL_GAS_EQUATION * self.get_temperature(id)
+                / volume;
         }
 
         0.0
@@ -324,35 +210,35 @@ impl Mixture {
     // Anyway, it could cause, potentially, unexpected behavior.
     #[inline(always)]
     #[must_use]
-    pub fn return_volume(&self) -> f32 {
+    pub unsafe fn return_volume(&self, id: usize) -> f32 {
         profile!("return_volume");
 
-        0.0_f32.max(self.volume)
+        0.0_f32.max(self.get_volume(id))
     }
 
     #[inline(always)]
     #[must_use]
-    pub fn get_thermal_energy(&self) -> f32 {
+    pub unsafe fn get_thermal_energy(&self, id: usize) -> f32 {
         profile!("get_thermal_energy");
 
-        self.temperature * self.get_heat_capacity()
+        self.get_temperature(id) * self.get_heat_capacity(id)
     }
 
     #[inline(always)]
-    pub fn react(&mut self) -> bool {
+    pub unsafe fn react(&mut self, id: usize) -> bool {
         profile!("react");
 
         let mut reacting = false; //set to 1 if a notable reaction occured (used by pipe_network)
 
-        if self.agent_b != 0.0
-            && self.temperature > 900.0
-            && self.toxins > MINIMUM_HEAT_CAPACITY
-            && self.carbon_dioxide > MINIMUM_HEAT_CAPACITY
+        if self.get_agent_b(id) != 0.0
+            && self.get_temperature(id) > 900.0
+            && self.get_toxins(id) > MINIMUM_HEAT_CAPACITY
+            && self.get_carbon_dioxide(id) > MINIMUM_HEAT_CAPACITY
         {
             let gases = [
-                self.carbon_dioxide * 0.75,
-                self.toxins * 0.25,
-                self.agent_b * 0.05,
+                self.get_carbon_dioxide(id) * 0.75,
+                self.get_toxins(id) * 0.25,
+                self.get_agent_b(id) * 0.05,
             ];
 
             let reaction_rate = unsafe {
@@ -362,15 +248,15 @@ impl Mixture {
                     .unwrap_unchecked()
             };
 
-            self.carbon_dioxide -= reaction_rate;
-            self.oxygen += reaction_rate;
-            self.agent_b -= reaction_rate * 0.05;
-            self.temperature += (reaction_rate * 20_000.0) / self.get_heat_capacity();
+            self.carbon_dioxide[id] -= reaction_rate;
+            self.oxygen[id] += reaction_rate;
+            self.agent_b[id] -= reaction_rate * 0.05;
+            self.temperature[id] += (reaction_rate * 20_000.0) / self.get_heat_capacity(id);
 
             reacting = true;
         }
 
-        if self.temperature > FIRE_MINIMUM_TEMPERATURE_TO_EXIST && self.fire() > 0.0 {
+        if self.temperature[id] > FIRE_MINIMUM_TEMPERATURE_TO_EXIST && self.fire(id) > 0.0 {
             reacting = true;
         }
 
@@ -379,238 +265,259 @@ impl Mixture {
 
     #[inline(always)]
     #[must_use]
-    fn fire(&mut self) -> f32 {
+    unsafe fn fire(&mut self, id: usize) -> f32 {
         profile!("fire");
 
-        self.fuel_burnt = 0.0;
+        self.fuel_burnt[id] = 0.0;
         let mut energy_released = 0.0;
-        let old_heat_capacity = self.get_heat_capacity();
+        let old_heat_capacity = self.get_heat_capacity(id);
 
         //Handle plasma burning
-        if self.toxins > MINIMUM_HEAT_CAPACITY {
+        if self.toxins[id] > MINIMUM_HEAT_CAPACITY {
             let plasma_burn_rate;
             let oxygen_burn_rate;
 
-            let temperature_scale = if self.temperature > PLASMA_UPPER_TEMPERATURE {
+            let temperature_scale = if self.temperature[id] > PLASMA_UPPER_TEMPERATURE {
                 1.0
             } else {
-                (self.temperature - PLASMA_MINIMUM_BURN_TEMPERATURE)
+                (self.temperature[id] - PLASMA_MINIMUM_BURN_TEMPERATURE)
                     / (PLASMA_UPPER_TEMPERATURE - PLASMA_MINIMUM_BURN_TEMPERATURE)
             };
 
             if temperature_scale > 0.0 {
                 oxygen_burn_rate = OXYGEN_BURN_RATE_BASE - temperature_scale;
 
-                if self.oxygen > self.toxins * PLASMA_OXYGEN_FULLBURN {
-                    plasma_burn_rate = (self.toxins * temperature_scale) / PLASMA_BURN_RATE_DELTA
+                let toxins = self.get_toxins(id);
+                if self.get_oxygen(id) > toxins * PLASMA_OXYGEN_FULLBURN {
+                    plasma_burn_rate = (toxins * temperature_scale) / PLASMA_BURN_RATE_DELTA
                 } else {
-                    plasma_burn_rate = (temperature_scale * (self.oxygen / PLASMA_OXYGEN_FULLBURN))
+                    plasma_burn_rate = (temperature_scale
+                        * (self.get_oxygen(id) / PLASMA_OXYGEN_FULLBURN))
                         / PLASMA_BURN_RATE_DELTA;
                 }
 
                 if plasma_burn_rate > MINIMUM_HEAT_CAPACITY {
-                    self.toxins -= plasma_burn_rate;
-                    self.oxygen -= plasma_burn_rate * oxygen_burn_rate;
-                    self.carbon_dioxide += plasma_burn_rate;
+                    self.set_toxins(id, self.get_toxins(id) - plasma_burn_rate);
+                    self.set_oxygen(
+                        id,
+                        self.get_oxygen(id) - plasma_burn_rate * oxygen_burn_rate,
+                    );
+                    self.set_carbon_dioxide(id, self.get_carbon_dioxide(id) + plasma_burn_rate);
 
                     energy_released += FIRE_PLASMA_ENERGY_RELEASED * (plasma_burn_rate);
 
-                    self.fuel_burnt += (plasma_burn_rate) * (1.0 + oxygen_burn_rate);
+                    self.set_fuel_burnt(
+                        id,
+                        self.get_fuel_burnt(id) + ((plasma_burn_rate) * (1.0 + oxygen_burn_rate)),
+                    );
                 }
             }
         }
 
         if energy_released > 0.0 {
-            let new_heat_capacity = self.get_heat_capacity();
+            let new_heat_capacity = self.get_heat_capacity(id);
 
             if new_heat_capacity > MINIMUM_HEAT_CAPACITY {
-                self.temperature =
-                    (self.temperature * old_heat_capacity + energy_released) / new_heat_capacity;
+                self.set_temperature(
+                    id,
+                    (self.get_temperature(id) * old_heat_capacity + energy_released)
+                        / new_heat_capacity,
+                );
             }
         }
 
-        self.fuel_burnt
+        self.get_fuel_burnt(id)
     }
 
     #[inline(always)]
-    pub fn archive(&mut self) {
+    pub unsafe fn archive(&mut self, id: usize) {
         profile!("archive");
 
-        self.oxygen_archived = self.oxygen;
-        self.carbon_dioxide_archived = self.carbon_dioxide;
-        self.nitrogen_archived = self.nitrogen;
-        self.toxins_archived = self.toxins;
-        self.sleeping_agent_archived = self.sleeping_agent;
-        self.agent_b_archived = self.agent_b;
-        self.temperature_archived = self.temperature;
+        self.set_oxygen_archived(id, self.get_oxygen(id));
+        self.set_carbon_dioxide_archived(id, self.get_carbon_dioxide(id));
+        self.set_nitrogen_archived(id, self.get_nitrogen(id));
+        self.set_toxins_archived(id, self.get_toxins(id));
+        self.set_sleeping_agent_archived(id, self.get_sleeping_agent(id));
+        self.set_agent_b_archived(id, self.get_agent_b(id));
+        self.set_temperature_archived(id, self.get_temperature(id));
     }
 
+    #[rustfmt::skip]
     #[inline(always)]
-    pub fn merge(&mut self, giver: Option<MixtureRefMut>) {
+    pub unsafe  fn merge(&mut self, id: usize, giver_id: usize) {
         profile!("get_oxygen");
 
-        let giver = match giver {
-            Some(giver) => giver,
-            None => return,
-        };
+        if !self.get_is_initialized(giver_id) {
+            return;
+        }
 
-        if (self.temperature - giver.temperature).abs() > MINIMUM_TEMPERATURE_DELTA_TO_CONSIDER {
-            let self_heat_capacity = self.get_heat_capacity();
-            let giver_heat_capacity = giver.get_heat_capacity();
+        if (self.get_temperature(id) - self.get_temperature(giver_id)).abs()
+            > MINIMUM_TEMPERATURE_DELTA_TO_CONSIDER
+        {
+            let self_heat_capacity = self.get_heat_capacity(id);
+            let giver_heat_capacity = self.get_heat_capacity(giver_id);
             let combined_heat_capacity = giver_heat_capacity + self_heat_capacity;
             if combined_heat_capacity != 0.0 {
-                self.temperature = (giver.temperature * giver_heat_capacity
-                    + self.temperature * self_heat_capacity)
-                    / combined_heat_capacity
+                self.set_temperature(
+                    id,
+                    (self.get_temperature(giver_id) * giver_heat_capacity
+                        + self.get_temperature(id) * self_heat_capacity)
+                        / combined_heat_capacity,
+                );
             }
         }
 
-        self.oxygen += giver.oxygen;
-        self.carbon_dioxide += giver.carbon_dioxide;
-        self.nitrogen += giver.nitrogen;
-        self.toxins += giver.toxins;
-        self.sleeping_agent += giver.sleeping_agent;
-        self.agent_b += giver.agent_b;
+        self.set_oxygen(id, self.get_oxygen(id) + self.get_oxygen(giver_id));
+        self.set_carbon_dioxide(id, self.get_carbon_dioxide(id) + self.get_carbon_dioxide(giver_id));
+        self.set_nitrogen(id, self.get_nitrogen(id) + self.get_nitrogen(giver_id));
+        self.set_toxins(id, self.get_toxins(id) + self.get_toxins(giver_id));
+        self.set_sleeping_agent(id, self.get_sleeping_agent(id) + self.get_sleeping_agent(giver_id));
+        self.set_agent_b(id, self.get_agent_b(id) + self.get_agent_b(giver_id));
     }
 
+    #[rustfmt::skip]
     #[inline(always)]
-    pub fn remove(&mut self, removed_id: u32, mut amount: f32) {
+    pub unsafe  fn remove(&mut self, id: usize, removed_id: usize, mut amount: f32) {
         profile!("remove");
 
-        let sum = self.get_total_moles();
+        let sum = self.get_total_moles(id);
         amount = amount.min(sum); // Can not take more air than tile has!
 
-        let mut removed = match amount <= 0.0 {
-            true => {
-                unsafe { GAS_MIXTURES.remove(&removed_id).unwrap_unchecked() };
+        if amount <= 0.0 {
+            self.unregister_by_id(removed_id);
 
-                return;
-            }
-            false => unsafe { Self::get_mixture_mut_by_id(removed_id).unwrap_unchecked() },
-        };
+            return;
+        }
 
-        removed.oxygen = quantize((self.oxygen / sum) * amount);
-        removed.nitrogen = quantize((self.nitrogen / sum) * amount);
-        removed.carbon_dioxide = quantize((self.carbon_dioxide / sum) * amount);
-        removed.toxins = quantize((self.toxins / sum) * amount);
-        removed.sleeping_agent = quantize((self.sleeping_agent / sum) * amount);
-        removed.agent_b = quantize((self.agent_b / sum) * amount);
-        removed.temperature = self.temperature;
+        self.set_oxygen(removed_id, quantize((self.get_oxygen(id) / sum) * amount));
+        self.set_nitrogen(removed_id, quantize((self.get_nitrogen(id) / sum) * amount));
+        self.set_carbon_dioxide(removed_id,quantize((self.get_carbon_dioxide(id) / sum) * amount),);
+        self.set_toxins(removed_id, quantize((self.get_toxins(id) / sum) * amount));
+        self.set_sleeping_agent(removed_id,quantize((self.get_sleeping_agent(id) / sum) * amount),);
+        self.set_agent_b(removed_id, quantize((self.get_agent_b(id) / sum) * amount));
+        self.set_temperature(removed_id, self.get_temperature(id));
 
-        self.oxygen -= removed.oxygen;
-        self.nitrogen -= removed.nitrogen;
-        self.carbon_dioxide -= removed.carbon_dioxide;
-        self.toxins -= removed.toxins;
-        self.sleeping_agent -= removed.sleeping_agent;
-        self.agent_b -= removed.agent_b;
+        self.set_oxygen(id, self.get_oxygen(id) - self.get_oxygen(removed_id));
+        self.set_nitrogen(id, self.get_nitrogen(id) - self.get_nitrogen(removed_id));
+        self.set_carbon_dioxide(id, self.get_carbon_dioxide(id) - self.get_carbon_dioxide(removed_id));
+        self.set_toxins(id, self.get_toxins(id) - self.get_toxins(removed_id));
+        self.set_sleeping_agent(id, self.get_sleeping_agent(id) - self.get_sleeping_agent(removed_id));
+        self.set_agent_b(id, self.get_agent_b(id) - self.get_agent_b(removed_id));
     }
 
+    #[rustfmt::skip]
     #[inline(always)]
-    pub fn remove_ratio(&mut self, removed_id: u32, mut ratio: f32) {
+    pub  unsafe fn remove_ratio(&mut self, id: usize, removed_id: usize, mut ratio: f32) {
         profile!("remove_ratio");
 
-        let mut removed = unsafe {
-            match ratio <= 0.0 {
-                true => {
-                    GAS_MIXTURES.remove(&removed_id).unwrap_unchecked();
+        if ratio <= 0.0 {
+            self.unregister_by_id(removed_id);
 
-                    return;
-                }
-                false => Self::get_mixture_mut_by_id(removed_id).unwrap_unchecked(),
-            }
-        };
+            return;
+        }
 
         ratio = ratio.min(1.0);
 
-        removed.oxygen = quantize(self.oxygen * ratio);
-        removed.nitrogen = quantize(self.nitrogen * ratio);
-        removed.carbon_dioxide = quantize(self.carbon_dioxide * ratio);
-        removed.toxins = quantize(self.toxins * ratio);
-        removed.sleeping_agent = quantize(self.sleeping_agent * ratio);
-        removed.agent_b = quantize(self.agent_b * ratio);
-        removed.temperature = self.temperature;
+        self.set_oxygen(removed_id, quantize(self.get_oxygen(id) * ratio));
+        self.set_nitrogen(removed_id, quantize(self.get_nitrogen(id) * ratio));
+        self.set_carbon_dioxide(removed_id, quantize(self.get_carbon_dioxide(id) * ratio));
+        self.set_toxins(removed_id, quantize(self.get_toxins(id) * ratio));
+        self.set_sleeping_agent(removed_id, quantize(self.get_sleeping_agent(id) * ratio));
+        self.set_agent_b(removed_id, quantize(self.get_agent_b(id) * ratio));
+        self.set_temperature(removed_id, self.get_temperature(id));
 
-        self.oxygen -= removed.oxygen;
-        self.nitrogen -= removed.nitrogen;
-        self.carbon_dioxide -= removed.carbon_dioxide;
-        self.toxins -= removed.toxins;
-        self.sleeping_agent -= removed.sleeping_agent;
-        self.agent_b -= removed.agent_b;
+        self.set_oxygen(id, self.get_oxygen(id) - self.get_oxygen(removed_id));
+        self.set_nitrogen(id, self.get_oxygen(id) - self.get_nitrogen(removed_id));
+        self.set_carbon_dioxide(id, self.get_oxygen(id) - self.get_carbon_dioxide(removed_id));
+        self.set_toxins(id, self.get_oxygen(id) - self.get_toxins(removed_id));
+        self.set_sleeping_agent(id, self.get_oxygen(id) - self.get_sleeping_agent(removed_id));
+        self.set_agent_b(id, self.get_oxygen(id) - self.get_agent_b(removed_id));
     }
 
     #[inline(always)]
-    pub fn copy_from(&mut self, sample: MixtureRef) {
+    pub unsafe fn copy_from(&mut self, id: usize, sample_id: usize) {
         profile!("copy_from");
 
-        self.oxygen = sample.oxygen;
-        self.carbon_dioxide = sample.carbon_dioxide;
-        self.nitrogen = sample.nitrogen;
-        self.toxins = sample.toxins;
-        self.sleeping_agent = sample.sleeping_agent;
-        self.agent_b = sample.agent_b;
-        self.temperature = sample.temperature;
+        self.set_oxygen(id, self.get_oxygen(sample_id));
+        self.set_carbon_dioxide(id, self.get_carbon_dioxide(sample_id));
+        self.set_nitrogen(id, self.get_nitrogen(sample_id));
+        self.set_toxins(id, self.get_toxins(sample_id));
+        self.set_sleeping_agent(id, self.get_sleeping_agent(sample_id));
+        self.set_agent_b(id, self.get_agent_b(sample_id));
+        self.set_temperature(id, self.get_temperature(sample_id));
     }
 
     // TODO: Make a method looks much more minimalistic.
     #[allow(clippy::too_many_arguments)]
     #[inline(always)]
-    pub fn copy_from_turf(
+    pub unsafe fn copy_from_turf(
         &mut self,
+        id: usize,
         turf_model: Turf,
         initial_model_temperature: f32,
         initial_model_parent_temperature: f32,
     ) {
         profile!("copy_from_turf");
 
-        self.oxygen = turf_model.oxygen;
-        self.carbon_dioxide = turf_model.carbon_dioxide;
-        self.nitrogen = turf_model.nitrogen;
-        self.toxins = turf_model.toxins;
-        self.sleeping_agent = turf_model.sleeping_agent;
-        self.agent_b = turf_model.agent_b;
+        self.set_oxygen(id, turf_model.oxygen);
+        self.set_carbon_dioxide(id, turf_model.carbon_dioxide);
+        self.set_nitrogen(id, turf_model.nitrogen);
+        self.set_toxins(id, turf_model.toxins);
+        self.set_sleeping_agent(id, turf_model.sleeping_agent);
+        self.set_agent_b(id, turf_model.agent_b);
 
         if turf_model.temperature != initial_model_temperature
             || turf_model.temperature != initial_model_parent_temperature
         {
-            self.temperature = turf_model.temperature;
+            self.set_temperature(id, turf_model.temperature);
         }
     }
 
     // TODO: Make a method looks much more minimalistic.
     #[allow(clippy::too_many_arguments)]
     #[inline(always)]
-    pub fn check_turf(&self, turf_model: Turf, atmos_adjacent_turfs: f32) -> bool {
+    pub unsafe fn check_turf(
+        &self,
+        id: usize,
+        turf_model: Turf,
+        atmos_adjacent_turfs: f32,
+    ) -> bool {
         profile!("check_turf");
 
         let delta_oxygen =
-            (self.oxygen_archived - turf_model.oxygen) / (atmos_adjacent_turfs + 1.0);
-        let delta_carbon_dioxide = (self.carbon_dioxide_archived - turf_model.carbon_dioxide)
+            (self.get_oxygen_archived(id) - turf_model.oxygen) / (atmos_adjacent_turfs + 1.0);
+        let delta_carbon_dioxide = (self.get_carbon_dioxide_archived(id)
+            - turf_model.carbon_dioxide)
             / (atmos_adjacent_turfs + 1.0);
         let delta_nitrogen =
-            (self.nitrogen_archived - turf_model.nitrogen) / (atmos_adjacent_turfs + 1.0);
+            (self.get_nitrogen_archived(id) - turf_model.nitrogen) / (atmos_adjacent_turfs + 1.0);
         let delta_toxins =
-            (self.toxins_archived - turf_model.toxins) / (atmos_adjacent_turfs + 1.0);
-        let delta_sleeping_agent = (self.sleeping_agent_archived - turf_model.sleeping_agent)
+            (self.get_toxins_archived(id) - turf_model.toxins) / (atmos_adjacent_turfs + 1.0);
+        let delta_sleeping_agent = (self.get_sleeping_agent_archived(id)
+            - turf_model.sleeping_agent)
             / (atmos_adjacent_turfs + 1.0);
         let delta_agent_b =
-            (self.agent_b_archived - turf_model.agent_b) / (atmos_adjacent_turfs + 1.0);
-        let delta_temperature = self.temperature_archived - turf_model.temperature;
+            (self.get_agent_b_archived(id) - turf_model.agent_b) / (atmos_adjacent_turfs + 1.0);
+        let delta_temperature = self.get_temperature_archived(id) - turf_model.temperature;
 
         // FIXME: Potentially, can be minimized and etc., anyway, this is 💀
         if ((delta_oxygen.abs() > MINIMUM_AIR_TO_SUSPEND)
-            && (delta_oxygen.abs() >= self.oxygen_archived * MINIMUM_AIR_RATIO_TO_SUSPEND))
+            && (delta_oxygen.abs() >= self.get_oxygen_archived(id) * MINIMUM_AIR_RATIO_TO_SUSPEND))
             || ((delta_carbon_dioxide.abs() > MINIMUM_AIR_TO_SUSPEND)
                 && (delta_carbon_dioxide.abs()
-                    >= self.carbon_dioxide_archived * MINIMUM_AIR_RATIO_TO_SUSPEND))
+                    >= self.get_carbon_dioxide_archived(id) * MINIMUM_AIR_RATIO_TO_SUSPEND))
             || ((delta_nitrogen.abs() > MINIMUM_AIR_TO_SUSPEND)
-                && (delta_nitrogen.abs() >= self.nitrogen_archived * MINIMUM_AIR_RATIO_TO_SUSPEND))
+                && (delta_nitrogen.abs()
+                    >= self.get_nitrogen_archived(id) * MINIMUM_AIR_RATIO_TO_SUSPEND))
             || ((delta_toxins.abs() > MINIMUM_AIR_TO_SUSPEND)
-                && (delta_toxins.abs() >= self.toxins_archived * MINIMUM_AIR_RATIO_TO_SUSPEND))
+                && (delta_toxins.abs()
+                    >= self.get_toxins_archived(id) * MINIMUM_AIR_RATIO_TO_SUSPEND))
             || ((delta_sleeping_agent.abs() > MINIMUM_AIR_TO_SUSPEND)
                 && (delta_sleeping_agent.abs()
-                    >= self.sleeping_agent_archived * MINIMUM_AIR_RATIO_TO_SUSPEND))
+                    >= self.get_sleeping_agent_archived(id) * MINIMUM_AIR_RATIO_TO_SUSPEND))
             || ((delta_agent_b.abs() > MINIMUM_AIR_TO_SUSPEND)
-                && (delta_agent_b.abs() >= self.agent_b_archived * MINIMUM_AIR_RATIO_TO_SUSPEND))
+                && (delta_agent_b.abs()
+                    >= self.get_agent_b_archived(id) * MINIMUM_AIR_RATIO_TO_SUSPEND))
             || delta_temperature.abs() > MINIMUM_TEMPERATURE_DELTA_TO_SUSPEND
         {
             return false;
@@ -622,32 +529,35 @@ impl Mixture {
     // TODO: Make a method looks much more minimalistic.
     #[allow(clippy::too_many_arguments)]
     #[inline(always)]
-    pub fn check_turf_total(&self, turf_model: Turf) -> bool {
+    pub unsafe fn check_turf_total(&self, id: usize, turf_model: Turf) -> bool {
         profile!("check_turf_total");
 
-        let delta_oxygen = self.oxygen - turf_model.oxygen;
-        let delta_carbon_dioxide = self.carbon_dioxide - turf_model.carbon_dioxide;
-        let delta_nitrogen = self.nitrogen - turf_model.nitrogen;
-        let delta_toxins = self.toxins - turf_model.toxins;
-        let delta_sleeping_agent = self.sleeping_agent - turf_model.sleeping_agent;
-        let delta_agent_b = self.agent_b - turf_model.agent_b;
-        let delta_temperature = self.temperature - turf_model.temperature;
+        let delta_oxygen = self.get_oxygen(id) - turf_model.oxygen;
+        let delta_carbon_dioxide = self.get_carbon_dioxide(id) - turf_model.carbon_dioxide;
+        let delta_nitrogen = self.get_nitrogen(id) - turf_model.nitrogen;
+        let delta_toxins = self.get_toxins(id) - turf_model.toxins;
+        let delta_sleeping_agent = self.get_sleeping_agent(id) - turf_model.sleeping_agent;
+        let delta_agent_b = self.get_agent_b(id) - turf_model.agent_b;
+        let delta_temperature = self.get_temperature(id) - turf_model.temperature;
 
         // FIXME: Potentially, can be minimized and etc., anyway, this is 💀
         if ((delta_oxygen.abs() > MINIMUM_AIR_TO_SUSPEND)
-            && (delta_oxygen.abs() >= self.oxygen_archived * MINIMUM_AIR_RATIO_TO_SUSPEND))
+            && (delta_oxygen.abs() >= self.get_oxygen_archived(id) * MINIMUM_AIR_RATIO_TO_SUSPEND))
             || ((delta_carbon_dioxide.abs() > MINIMUM_AIR_TO_SUSPEND)
                 && (delta_carbon_dioxide.abs()
-                    >= self.carbon_dioxide_archived * MINIMUM_AIR_RATIO_TO_SUSPEND))
+                    >= self.get_carbon_dioxide_archived(id) * MINIMUM_AIR_RATIO_TO_SUSPEND))
             || ((delta_nitrogen.abs() > MINIMUM_AIR_TO_SUSPEND)
-                && (delta_nitrogen.abs() >= self.nitrogen_archived * MINIMUM_AIR_RATIO_TO_SUSPEND))
+                && (delta_nitrogen.abs()
+                    >= self.get_nitrogen_archived(id) * MINIMUM_AIR_RATIO_TO_SUSPEND))
             || ((delta_toxins.abs() > MINIMUM_AIR_TO_SUSPEND)
-                && (delta_toxins.abs() >= self.toxins_archived * MINIMUM_AIR_RATIO_TO_SUSPEND))
+                && (delta_toxins.abs()
+                    >= self.get_toxins_archived(id) * MINIMUM_AIR_RATIO_TO_SUSPEND))
             || ((delta_sleeping_agent.abs() > MINIMUM_AIR_TO_SUSPEND)
                 && (delta_sleeping_agent.abs()
-                    >= self.sleeping_agent_archived * MINIMUM_AIR_RATIO_TO_SUSPEND))
+                    >= self.get_sleeping_agent_archived(id) * MINIMUM_AIR_RATIO_TO_SUSPEND))
             || ((delta_agent_b.abs() > MINIMUM_AIR_TO_SUSPEND)
-                && (delta_agent_b.abs() >= self.agent_b_archived * MINIMUM_AIR_RATIO_TO_SUSPEND))
+                && (delta_agent_b.abs()
+                    >= self.get_agent_b_archived(id) * MINIMUM_AIR_RATIO_TO_SUSPEND))
             || delta_temperature.abs() > MINIMUM_TEMPERATURE_DELTA_TO_SUSPEND
         {
             return false;
@@ -658,40 +568,44 @@ impl Mixture {
 
     #[inline(always)]
     #[must_use]
-    pub fn share(&mut self, sharer: Option<MixtureRefMut>, atmos_adjacent_turfs: f32) -> f32 {
+    pub unsafe fn share(&mut self, id: usize, sharer_id: usize, atmos_adjacent_turfs: f32) -> f32 {
         profile!("share");
 
-        let mut sharer = match sharer {
-            Some(sharer) => sharer,
-            None => return 0.0,
-        };
+        if !self.get_is_initialized(sharer_id) {
+            return 0.0;
+        }
 
-        if self.oxygen_archived == sharer.oxygen_archived
-            && self.carbon_dioxide_archived == sharer.carbon_dioxide_archived
-            && self.nitrogen_archived == sharer.nitrogen_archived
-            && self.toxins_archived == sharer.toxins_archived
-            && self.sleeping_agent_archived == sharer.sleeping_agent_archived
-            && self.agent_b_archived == sharer.agent_b_archived
-            && self.temperature_archived == sharer.temperature_archived
+        if self.get_oxygen_archived(id) == self.get_oxygen_archived(sharer_id)
+            && self.get_carbon_dioxide_archived(id) == self.get_carbon_dioxide_archived(sharer_id)
+            && self.get_nitrogen_archived(id) == self.get_nitrogen_archived(sharer_id)
+            && self.get_toxins_archived(id) == self.get_toxins_archived(sharer_id)
+            && self.get_sleeping_agent_archived(id) == self.get_sleeping_agent_archived(sharer_id)
+            && self.get_agent_b_archived(id) == self.get_agent_b_archived(sharer_id)
+            && self.get_temperature_archived(id) == self.get_temperature_archived(sharer_id)
         {
             return 0.0;
         }
 
         let delta_oxygen =
-            quantize(self.oxygen_archived - sharer.oxygen_archived) / (atmos_adjacent_turfs + 1.0);
-        let delta_carbon_dioxide =
-            quantize(self.carbon_dioxide_archived - sharer.carbon_dioxide_archived)
+            quantize(self.get_oxygen_archived(id) - self.get_oxygen_archived(sharer_id))
                 / (atmos_adjacent_turfs + 1.0);
-        let delta_nitrogen = quantize(self.nitrogen_archived - sharer.nitrogen_archived)
-            / (atmos_adjacent_turfs + 1.0);
+        let delta_carbon_dioxide = quantize(
+            self.get_carbon_dioxide_archived(id) - self.get_carbon_dioxide_archived(sharer_id),
+        ) / (atmos_adjacent_turfs + 1.0);
+        let delta_nitrogen =
+            quantize(self.get_nitrogen_archived(id) - self.get_nitrogen_archived(sharer_id))
+                / (atmos_adjacent_turfs + 1.0);
         let delta_toxins =
-            quantize(self.toxins_archived - sharer.toxins_archived) / (atmos_adjacent_turfs + 1.0);
-        let delta_sleeping_agent =
-            quantize(self.sleeping_agent_archived - sharer.sleeping_agent_archived)
+            quantize(self.get_toxins_archived(id) - self.get_toxins_archived(sharer_id))
                 / (atmos_adjacent_turfs + 1.0);
-        let delta_agent_b = quantize(self.agent_b_archived - sharer.agent_b_archived)
-            / (atmos_adjacent_turfs + 1.0);
-        let delta_temperature = self.temperature_archived - sharer.temperature_archived;
+        let delta_sleeping_agent = quantize(
+            self.get_sleeping_agent_archived(id) - self.get_sleeping_agent_archived(sharer_id),
+        ) / (atmos_adjacent_turfs + 1.0);
+        let delta_agent_b =
+            quantize(self.get_agent_b_archived(id) - self.get_agent_b_archived(sharer_id))
+                / (atmos_adjacent_turfs + 1.0);
+        let delta_temperature =
+            self.get_temperature_archived(id) - self.get_temperature_archived(sharer_id);
 
         let mut old_self_heat_capacity = 0.0;
         let mut old_sharer_heat_capacity = 0.0;
@@ -746,27 +660,33 @@ impl Mixture {
                 }
             }
 
-            old_self_heat_capacity = self.get_heat_capacity();
-            old_sharer_heat_capacity = sharer.get_heat_capacity();
+            old_self_heat_capacity = self.get_heat_capacity(id);
+            old_sharer_heat_capacity = self.get_heat_capacity(sharer_id);
         }
 
-        self.oxygen -= delta_oxygen;
-        sharer.oxygen += delta_oxygen;
+        self.set_oxygen(id, self.get_oxygen(id) - delta_oxygen);
+        self.set_oxygen(sharer_id, self.get_oxygen(sharer_id) + delta_oxygen);
 
-        self.carbon_dioxide -= delta_carbon_dioxide;
-        sharer.carbon_dioxide += delta_carbon_dioxide;
+        self.set_carbon_dioxide(id, self.get_carbon_dioxide(id) - delta_carbon_dioxide);
+        self.set_carbon_dioxide(
+            sharer_id,
+            self.get_carbon_dioxide(sharer_id) + delta_carbon_dioxide,
+        );
 
-        self.nitrogen -= delta_nitrogen;
-        sharer.nitrogen += delta_nitrogen;
+        self.set_nitrogen(id, self.get_nitrogen(id) - delta_nitrogen);
+        self.set_nitrogen(sharer_id, self.get_nitrogen(sharer_id) + delta_nitrogen);
 
-        self.toxins -= delta_toxins;
-        sharer.toxins += delta_toxins;
+        self.set_toxins(id, self.get_toxins(id) - delta_toxins);
+        self.set_toxins(sharer_id, self.get_toxins(sharer_id) + delta_toxins);
 
-        self.sleeping_agent -= delta_sleeping_agent;
-        sharer.sleeping_agent += delta_sleeping_agent;
+        self.set_sleeping_agent(id, self.get_sleeping_agent(id) - delta_sleeping_agent);
+        self.set_sleeping_agent(
+            sharer_id,
+            self.get_sleeping_agent(sharer_id) + delta_sleeping_agent,
+        );
 
-        self.agent_b -= delta_agent_b;
-        sharer.agent_b += delta_agent_b;
+        self.set_agent_b(id, self.get_agent_b(id) - delta_agent_b);
+        self.set_agent_b(sharer_id, self.get_agent_b(sharer_id) + delta_agent_b);
 
         let moved_moles = delta_oxygen
             + delta_carbon_dioxide
@@ -774,12 +694,15 @@ impl Mixture {
             + delta_toxins
             + delta_sleeping_agent
             + delta_agent_b;
-        self.last_share = delta_oxygen.abs()
-            + delta_carbon_dioxide.abs()
-            + delta_nitrogen.abs()
-            + delta_toxins.abs()
-            + delta_sleeping_agent.abs()
-            + delta_agent_b.abs();
+        self.set_last_share(
+            id,
+            delta_oxygen.abs()
+                + delta_carbon_dioxide.abs()
+                + delta_nitrogen.abs()
+                + delta_toxins.abs()
+                + delta_sleeping_agent.abs()
+                + delta_agent_b.abs(),
+        );
 
         if delta_temperature.abs() > MINIMUM_TEMPERATURE_DELTA_TO_CONSIDER {
             let new_self_heat_capacity = old_self_heat_capacity + heat_capacity_sharer_to_self
@@ -788,17 +711,23 @@ impl Mixture {
                 - heat_capacity_sharer_to_self;
 
             if new_self_heat_capacity > MINIMUM_HEAT_CAPACITY {
-                self.temperature = (old_self_heat_capacity * self.temperature
-                    - heat_capacity_self_to_sharer * self.temperature_archived
-                    + heat_capacity_sharer_to_self * sharer.temperature_archived)
-                    / new_self_heat_capacity;
+                self.set_temperature(
+                    id,
+                    (old_self_heat_capacity * self.get_temperature(id)
+                        - heat_capacity_self_to_sharer * self.get_temperature_archived(id)
+                        + heat_capacity_sharer_to_self * self.get_temperature_archived(sharer_id))
+                        / new_self_heat_capacity,
+                );
             }
 
             if new_sharer_heat_capacity > MINIMUM_HEAT_CAPACITY {
-                sharer.temperature = (old_sharer_heat_capacity * sharer.temperature
-                    - heat_capacity_sharer_to_self * sharer.temperature_archived
-                    + heat_capacity_self_to_sharer * self.temperature_archived)
-                    / new_sharer_heat_capacity
+                self.set_temperature(
+                    sharer_id,
+                    (old_sharer_heat_capacity * self.get_temperature(sharer_id)
+                        - heat_capacity_sharer_to_self * self.get_temperature_archived(sharer_id)
+                        + heat_capacity_self_to_sharer * self.get_temperature_archived(id))
+                        / new_sharer_heat_capacity,
+                );
             }
 
             // <10% change in sharer heat capacity
@@ -806,30 +735,38 @@ impl Mixture {
                 && (new_sharer_heat_capacity / old_sharer_heat_capacity - 1.0).abs() < 0.10
                 && (new_sharer_heat_capacity / old_sharer_heat_capacity - 1.0).abs() < 0.10
             {
-                self.temperature_share(&mut sharer, OPEN_HEAT_TRANSFER_COEFFICIENT);
+                self.temperature_share(id, sharer_id, OPEN_HEAT_TRANSFER_COEFFICIENT);
             }
         }
 
         if (delta_temperature > MINIMUM_TEMPERATURE_TO_MOVE)
             || moved_moles.abs() > MINIMUM_MOLES_DELTA_TO_MOVE
         {
-            let delta_pressure = self.temperature_archived * (self.get_total_moles() + moved_moles)
-                - sharer.temperature_archived * (sharer.get_total_moles() - moved_moles);
-            delta_pressure * R_IDEAL_GAS_EQUATION / self.volume
+            let delta_pressure = self.get_temperature_archived(id)
+                * (self.get_total_moles(id) + moved_moles)
+                - self.get_temperature_archived(sharer_id)
+                    * (self.get_total_moles(sharer_id) - moved_moles);
+            delta_pressure * R_IDEAL_GAS_EQUATION / self.get_volume(id)
         } else {
             0.0
         }
     }
 
     #[inline(always)]
-    pub fn temperature_share(&mut self, sharer: &mut MixtureRefMut, conduction_coefficient: f32) {
+    pub unsafe fn temperature_share(
+        &mut self,
+        id: usize,
+        sharer_id: usize,
+        conduction_coefficient: f32,
+    ) {
         profile!("temperature_share");
 
-        let delta_temperature = self.temperature_archived - sharer.temperature_archived;
+        let delta_temperature =
+            self.get_temperature_archived(id) - self.get_temperature_archived(sharer_id);
 
         if delta_temperature.abs() > MINIMUM_TEMPERATURE_DELTA_TO_CONSIDER {
-            let self_heat_capacity = self.get_heat_capacity_archived();
-            let sharer_heat_capacity = sharer.get_heat_capacity_archived();
+            let self_heat_capacity = self.get_heat_capacity_archived(id);
+            let sharer_heat_capacity = self.get_heat_capacity_archived(sharer_id);
 
             if sharer_heat_capacity > MINIMUM_HEAT_CAPACITY
                 && (self_heat_capacity > MINIMUM_HEAT_CAPACITY)
@@ -839,16 +776,20 @@ impl Mixture {
                     * (self_heat_capacity * sharer_heat_capacity
                         / (self_heat_capacity + sharer_heat_capacity));
 
-                self.temperature -= heat / self_heat_capacity;
-                sharer.temperature += heat / sharer_heat_capacity;
+                self.set_temperature(id, self.get_temperature(id) - heat / self_heat_capacity);
+                self.set_temperature(
+                    sharer_id,
+                    self.get_temperature(sharer_id) + heat / sharer_heat_capacity,
+                );
             }
         }
     }
 
     #[inline(always)]
     #[must_use]
-    pub fn mimic(
+    pub unsafe fn mimic(
         &mut self,
+        id: usize,
         turf_model: Turf,
         model_thermal_conductivity: f32,
         model_heat_capacity: f32,
@@ -856,21 +797,21 @@ impl Mixture {
     ) -> f32 {
         profile!("mimic");
 
-        let delta_oxygen =
-            quantize(self.oxygen_archived - turf_model.oxygen) / (atmos_adjacent_turfs + 1.0);
+        let delta_oxygen = quantize(self.get_oxygen_archived(id) - turf_model.oxygen)
+            / (atmos_adjacent_turfs + 1.0);
         let delta_carbon_dioxide =
-            quantize(self.carbon_dioxide_archived - turf_model.carbon_dioxide)
+            quantize(self.get_carbon_dioxide_archived(id) - turf_model.carbon_dioxide)
                 / (atmos_adjacent_turfs + 1.0);
-        let delta_nitrogen =
-            quantize(self.nitrogen_archived - turf_model.nitrogen) / (atmos_adjacent_turfs + 1.0);
-        let delta_toxins =
-            quantize(self.toxins_archived - turf_model.toxins) / (atmos_adjacent_turfs + 1.0);
+        let delta_nitrogen = quantize(self.get_nitrogen_archived(id) - turf_model.nitrogen)
+            / (atmos_adjacent_turfs + 1.0);
+        let delta_toxins = quantize(self.get_toxins_archived(id) - turf_model.toxins)
+            / (atmos_adjacent_turfs + 1.0);
         let delta_sleeping_agent =
-            quantize(self.sleeping_agent_archived - turf_model.sleeping_agent)
+            quantize(self.get_sleeping_agent_archived(id) - turf_model.sleeping_agent)
                 / (atmos_adjacent_turfs + 1.0);
-        let delta_agent_b =
-            quantize(self.agent_b_archived - turf_model.agent_b) / (atmos_adjacent_turfs + 1.0);
-        let delta_temperature = self.temperature_archived - turf_model.temperature;
+        let delta_agent_b = quantize(self.get_agent_b_archived(id) - turf_model.agent_b)
+            / (atmos_adjacent_turfs + 1.0);
+        let delta_temperature = self.get_temperature_archived(id) - turf_model.temperature;
 
         let mut old_self_heat_capacity = 0.0;
         let mut heat_capacity_transferred = 0.0;
@@ -902,15 +843,15 @@ impl Mixture {
                 heat_capacity_transferred -= agent_b_heat_capacity;
             }
 
-            old_self_heat_capacity = self.get_heat_capacity();
+            old_self_heat_capacity = self.get_heat_capacity(id);
         }
 
-        self.oxygen -= delta_oxygen;
-        self.carbon_dioxide -= delta_carbon_dioxide;
-        self.nitrogen -= delta_nitrogen;
-        self.toxins -= delta_toxins;
-        self.sleeping_agent -= delta_sleeping_agent;
-        self.agent_b -= delta_agent_b;
+        self.set_oxygen(id, self.get_oxygen(id) - delta_oxygen);
+        self.set_carbon_dioxide(id, self.get_oxygen(id) - delta_carbon_dioxide);
+        self.set_nitrogen(id, self.get_nitrogen(id) - delta_nitrogen);
+        self.set_toxins(id, self.get_toxins(id) - delta_toxins);
+        self.set_sleeping_agent(id, self.get_sleeping_agent(id) - delta_sleeping_agent);
+        self.set_agent_b(id, self.get_agent_b(id) - delta_agent_b);
 
         let moved_moles = delta_oxygen
             + delta_carbon_dioxide
@@ -918,22 +859,29 @@ impl Mixture {
             + delta_toxins
             + delta_sleeping_agent
             + delta_agent_b;
-        self.last_share = delta_oxygen.abs()
-            + delta_carbon_dioxide.abs()
-            + delta_nitrogen.abs()
-            + delta_toxins.abs()
-            + delta_sleeping_agent.abs()
-            + delta_agent_b.abs();
+        self.set_last_share(
+            id,
+            delta_oxygen.abs()
+                + delta_carbon_dioxide.abs()
+                + delta_nitrogen.abs()
+                + delta_toxins.abs()
+                + delta_sleeping_agent.abs()
+                + delta_agent_b.abs(),
+        );
 
         if delta_temperature.abs() > MINIMUM_TEMPERATURE_DELTA_TO_CONSIDER {
             let new_self_heat_capacity = old_self_heat_capacity - heat_capacity_transferred;
             if new_self_heat_capacity > MINIMUM_HEAT_CAPACITY {
-                self.temperature = (old_self_heat_capacity * self.temperature
-                    - heat_capacity_transferred * self.temperature_archived)
-                    / new_self_heat_capacity;
+                self.set_temperature(
+                    id,
+                    (old_self_heat_capacity * self.get_temperature(id)
+                        - heat_capacity_transferred * self.get_temperature_archived(id))
+                        / new_self_heat_capacity,
+                );
             }
 
             self.temperature_mimic(
+                id,
                 turf_model.temperature,
                 model_heat_capacity,
                 model_thermal_conductivity,
@@ -943,7 +891,8 @@ impl Mixture {
         if (delta_temperature > MINIMUM_TEMPERATURE_TO_MOVE)
             || moved_moles.abs() > MINIMUM_MOLES_DELTA_TO_MOVE
         {
-            let delta_pressure = self.temperature_archived * (self.get_total_moles() + moved_moles)
+            let delta_pressure = self.get_temperature_archived(id)
+                * (self.get_total_moles(id) + moved_moles)
                 - turf_model.temperature
                     * (turf_model.oxygen
                         + turf_model.carbon_dioxide
@@ -951,25 +900,26 @@ impl Mixture {
                         + turf_model.toxins
                         + turf_model.sleeping_agent
                         + turf_model.agent_b);
-            delta_pressure * R_IDEAL_GAS_EQUATION / self.volume
+            delta_pressure * R_IDEAL_GAS_EQUATION / self.get_volume(id)
         } else {
             0.0
         }
     }
 
     #[inline(always)]
-    pub fn temperature_mimic(
+    pub unsafe fn temperature_mimic(
         &mut self,
+        id: usize,
         model_temperature: f32,
         model_heat_capacity: f32,
         conduction_coefficient: f32,
     ) {
         profile!("temperature_mimic");
 
-        let delta_temperature = self.temperature - model_temperature;
+        let delta_temperature = self.get_temperature(id) - model_temperature;
 
         if delta_temperature.abs() > MINIMUM_TEMPERATURE_DELTA_TO_CONSIDER {
-            let self_heat_capacity = self.get_heat_capacity();
+            let self_heat_capacity = self.get_heat_capacity(id);
 
             if (model_heat_capacity > MINIMUM_HEAT_CAPACITY)
                 && (self_heat_capacity > MINIMUM_HEAT_CAPACITY)
@@ -979,13 +929,18 @@ impl Mixture {
                     * (self_heat_capacity * model_heat_capacity
                         / (self_heat_capacity + model_heat_capacity));
 
-                self.temperature -= heat / self_heat_capacity
+                self.set_temperature(id, self.get_temperature(id) - heat / self_heat_capacity);
             }
         }
     }
 
     #[inline(always)]
-    pub fn temperature_turf_share(&mut self, turf_sharer: &Value, conduction_coefficient: f32) {
+    pub unsafe fn temperature_turf_share(
+        &mut self,
+        id: usize,
+        turf_sharer: &Value,
+        conduction_coefficient: f32,
+    ) {
         profile!("temperature_turf_share");
 
         let temperature_name = unsafe { string_ref!("temperature") };
@@ -1001,10 +956,10 @@ impl Mixture {
                 .unwrap_unchecked()
         };
 
-        let delta_temperature = self.temperature_archived - turf_sharer_temperature;
+        let delta_temperature = self.get_temperature_archived(id) - turf_sharer_temperature;
 
         if delta_temperature.abs() > MINIMUM_TEMPERATURE_DELTA_TO_CONSIDER {
-            let self_heat_capacity = self.get_heat_capacity();
+            let self_heat_capacity = self.get_heat_capacity(id);
 
             if (turf_sharer_heat_capacity > MINIMUM_HEAT_CAPACITY)
                 && (self_heat_capacity > MINIMUM_HEAT_CAPACITY)
@@ -1014,7 +969,7 @@ impl Mixture {
                     * (self_heat_capacity * turf_sharer_heat_capacity
                         / (self_heat_capacity + turf_sharer_heat_capacity));
 
-                self.temperature -= heat / self_heat_capacity;
+                self.set_temperature(id, self.get_temperature(id) - heat / self_heat_capacity);
                 unsafe {
                     turf_sharer
                         .set(
@@ -1029,62 +984,70 @@ impl Mixture {
 
     #[inline(always)]
     #[must_use]
-    pub fn compare(&self, sample: MixtureRef) -> bool {
+    pub unsafe fn compare(&self, id: usize, sample_id: usize) -> bool {
         profile!("compare");
 
-        if ((self.oxygen - sample.oxygen).abs() > MINIMUM_AIR_TO_SUSPEND)
-            && ((self.oxygen < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample.oxygen)
-                || (self.oxygen > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample.oxygen))
+        let oxygen = self.get_oxygen(id);
+        let sample_oxygen = self.get_oxygen(sample_id);
+        if ((oxygen - self.get_oxygen(sample_id)).abs() > MINIMUM_AIR_TO_SUSPEND)
+            && ((oxygen < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_oxygen)
+                || (oxygen > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_oxygen))
         {
             return false;
         }
 
-        if ((self.nitrogen - sample.nitrogen).abs() > MINIMUM_AIR_TO_SUSPEND)
-            && ((self.nitrogen < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample.nitrogen)
-                || (self.nitrogen > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample.nitrogen))
+        let nitrogen = self.get_nitrogen(id);
+        let sample_nitrogen = self.get_nitrogen(sample_id);
+        if ((nitrogen - sample_nitrogen).abs() > MINIMUM_AIR_TO_SUSPEND)
+            && ((nitrogen < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_nitrogen)
+                || (nitrogen > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_nitrogen))
         {
             return false;
         }
 
-        if ((self.carbon_dioxide - sample.carbon_dioxide).abs() > MINIMUM_AIR_TO_SUSPEND)
-            && ((self.carbon_dioxide
-                < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample.carbon_dioxide)
-                || (self.carbon_dioxide
-                    > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample.carbon_dioxide))
+        let carbon_dioxide = self.get_carbon_dioxide(id);
+        let sample_carbon_dioxide = self.get_carbon_dioxide(sample_id);
+        if ((carbon_dioxide - sample_carbon_dioxide).abs() > MINIMUM_AIR_TO_SUSPEND)
+            && ((carbon_dioxide < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_carbon_dioxide)
+                || (carbon_dioxide > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_carbon_dioxide))
         {
             return false;
         }
 
-        if ((self.toxins - sample.toxins).abs() > MINIMUM_AIR_TO_SUSPEND)
-            && ((self.toxins < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample.toxins)
-                || (self.toxins > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample.toxins))
+        let toxins = self.get_toxins(id);
+        let sample_toxins = self.get_toxins(sample_id);
+        if ((toxins - sample_toxins).abs() > MINIMUM_AIR_TO_SUSPEND)
+            && ((toxins < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_toxins)
+                || (toxins > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_toxins))
         {
             return false;
         }
 
-        if ((self.sleeping_agent - sample.sleeping_agent).abs() > MINIMUM_AIR_TO_SUSPEND)
-            && ((self.sleeping_agent
-                < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample.sleeping_agent)
-                || (self.sleeping_agent
-                    > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample.sleeping_agent))
+        let sleeping_agent = self.get_sleeping_agent(id);
+        let sample_sleeping_agent = self.get_sleeping_agent(sample_id);
+        if ((sleeping_agent - sample_sleeping_agent).abs() > MINIMUM_AIR_TO_SUSPEND)
+            && ((sleeping_agent < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_sleeping_agent)
+                || (sleeping_agent > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_sleeping_agent))
         {
             return false;
         }
 
-        if ((self.agent_b - sample.agent_b).abs() > MINIMUM_AIR_TO_SUSPEND)
-            && ((self.agent_b < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample.agent_b)
-                || (self.agent_b > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample.agent_b))
+        let agent_b = self.get_agent_b(id);
+        let sample_agent_b = self.get_agent_b(sample_id);
+        if ((agent_b - sample_agent_b).abs() > MINIMUM_AIR_TO_SUSPEND)
+            && ((agent_b < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_agent_b)
+                || (agent_b > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_agent_b))
         {
             return false;
         }
 
-        if self.get_total_moles() > MINIMUM_AIR_TO_SUSPEND
-            && ((self.temperature - sample.temperature).abs()
-                > MINIMUM_TEMPERATURE_DELTA_TO_SUSPEND)
-            && ((self.temperature
-                < (1.0 - MINIMUM_TEMPERATURE_RATIO_TO_SUSPEND) * sample.temperature)
-                || (self.temperature
-                    > (1.0 + MINIMUM_TEMPERATURE_RATIO_TO_SUSPEND) * sample.temperature))
+        let temperature = self.get_temperature(id);
+        let sample_temperature = self.get_temperature(sample_id);
+        if self.get_total_moles(id) > MINIMUM_AIR_TO_SUSPEND
+            && ((temperature - sample_temperature).abs() > MINIMUM_TEMPERATURE_DELTA_TO_SUSPEND)
+            && ((temperature < (1.0 - MINIMUM_TEMPERATURE_RATIO_TO_SUSPEND) * sample_temperature)
+                || (temperature
+                    > (1.0 + MINIMUM_TEMPERATURE_RATIO_TO_SUSPEND) * sample_temperature))
         {
             return false;
         }
@@ -1094,18 +1057,18 @@ impl Mixture {
 
     #[inline(always)]
     #[must_use]
-    pub fn get_breath_partial_pressure(&self, gas_pressure: f32) -> f32 {
+    pub unsafe fn get_breath_partial_pressure(&self, id: usize, gas_pressure: f32) -> f32 {
         profile!("get_breath_partial_pressure");
 
-        (gas_pressure * R_IDEAL_GAS_EQUATION * self.temperature) / BREATH_VOLUME
+        (gas_pressure * R_IDEAL_GAS_EQUATION * self.get_temperature(id)) / BREATH_VOLUME
     }
 
     //Reverse of the above
     #[inline(always)]
     #[must_use]
-    pub fn get_true_breath_pressure(&self, breath_pp: f32) -> f32 {
+    pub unsafe fn get_true_breath_pressure(&self, id: usize, breath_pp: f32) -> f32 {
         profile!("get_true_breath_pressure");
 
-        (breath_pp * BREATH_VOLUME) / (R_IDEAL_GAS_EQUATION * self.temperature)
+        (breath_pp * BREATH_VOLUME) / (R_IDEAL_GAS_EQUATION * self.get_temperature(id))
     }
 }

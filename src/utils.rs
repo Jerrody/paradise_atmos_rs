@@ -1,4 +1,4 @@
-use crate::gas_mixture::constants::*;
+use crate::constants::*;
 
 const QUANTIZE_NEAREST: f32 = 0.0001;
 
@@ -27,6 +27,16 @@ pub mod macros {
     macro_rules! value {
         ($value:expr) => {
             Ok(Value::from($value))
+        };
+    }
+
+    /// #### Description
+    /// Gets `id` from value.
+    /// Returns `usize`.
+    #[macro_export]
+    macro_rules! id {
+        ($value:expr) => {
+            $value.raw.data.id as usize
         };
     }
 }
