@@ -57,7 +57,7 @@ impl Mixture {
     #[inline(always)]
     #[must_use]
     fn new() -> Self {
-        let vec_of_zeros = vec![f32::default(); Self::DEFAULT_ALLOCATED_GAS_MIXTURES_COUNT];
+        let vec_of_zeros = vec![Default::default(); Self::DEFAULT_ALLOCATED_GAS_MIXTURES_COUNT];
         let vec_of_cell_volumes =
             vec![Self::CELL_VOLUME; Self::DEFAULT_ALLOCATED_GAS_MIXTURES_COUNT];
         let vec_of_bools = vec![Default::default(); Self::DEFAULT_ALLOCATED_GAS_MIXTURES_COUNT];
