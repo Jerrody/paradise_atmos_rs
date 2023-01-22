@@ -987,6 +987,7 @@ impl Mixture {
     pub unsafe fn compare(&self, id: usize, sample_id: usize) -> bool {
         profile!("compare");
 
+        // TODO: Can be minimized into helper function.
         let oxygen = self.get_oxygen(id);
         let sample_oxygen = self.get_oxygen(sample_id);
         if ((oxygen - self.get_oxygen(sample_id)).abs() > MINIMUM_AIR_TO_SUSPEND)

@@ -12,56 +12,56 @@ impl super::Mixture {
     pub unsafe fn set_carbon_dioxide(&mut self, id: usize, value: f32) {
         profile!("set_carbon_dioxide");
 
-        *self.oxygen.get_unchecked_mut(id) = value;
+        *self.carbon_dioxide.get_unchecked_mut(id) = value;
     }
 
     #[inline(always)]
     pub unsafe fn set_nitrogen(&mut self, id: usize, value: f32) {
         profile!("set_nitrogen");
 
-        *self.oxygen.get_unchecked_mut(id) = value;
+        *self.nitrogen.get_unchecked_mut(id) = value;
     }
 
     #[inline(always)]
     pub unsafe fn set_toxins(&mut self, id: usize, value: f32) {
         profile!("set_toxins");
 
-        *self.oxygen.get_unchecked_mut(id) = value;
+        *self.toxins.get_unchecked_mut(id) = value;
     }
 
     #[inline(always)]
     pub unsafe fn set_sleeping_agent(&mut self, id: usize, value: f32) {
         profile!("set_sleeping_agent");
 
-        *self.oxygen.get_unchecked_mut(id) = value;
+        *self.sleeping_agent.get_unchecked_mut(id) = value;
     }
 
     #[inline(always)]
     pub unsafe fn set_agent_b(&mut self, id: usize, value: f32) {
         profile!("set_agent_b");
 
-        *self.oxygen.get_unchecked_mut(id) = value;
+        *self.agent_b.get_unchecked_mut(id) = value;
     }
 
     #[inline(always)]
     pub unsafe fn set_volume(&mut self, id: usize, value: f32) {
         profile!("set_volume");
 
-        *self.oxygen.get_unchecked_mut(id) = value;
+        *self.volume.get_unchecked_mut(id) = value;
     }
 
     #[inline(always)]
     pub unsafe fn set_temperature(&mut self, id: usize, value: f32) {
         profile!("set_temperature");
 
-        *self.oxygen.get_unchecked_mut(id) = value;
+        *self.temperature.get_unchecked_mut(id) = value;
     }
 
     #[inline(always)]
     pub unsafe fn set_last_share(&mut self, id: usize, value: f32) {
         profile!("set_last_share");
 
-        *self.oxygen.get_unchecked_mut(id) = value;
+        *self.last_share.get_unchecked_mut(id) = value;
     }
 
     #[inline(always)]

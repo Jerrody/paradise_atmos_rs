@@ -67,10 +67,10 @@ impl super::Mixture {
 
     #[inline(always)]
     #[must_use]
-    pub fn get_last_share(&self, id: usize) -> f32 {
+    pub unsafe fn get_last_share(&self, id: usize) -> f32 {
         profile!("get_last_share");
 
-        unsafe { *self.last_share.get_unchecked(id) }
+        *self.last_share.get_unchecked(id)
     }
 
     #[inline(always)]
@@ -87,6 +87,7 @@ impl super::Mixture {
 
         *self.oxygen_archived.get_unchecked(id)
     }
+
     #[inline(always)]
     #[must_use]
     pub unsafe fn get_carbon_dioxide_archived(&self, id: usize) -> f32 {
@@ -94,6 +95,7 @@ impl super::Mixture {
 
         *self.carbon_dioxide_archived.get_unchecked(id)
     }
+
     #[inline(always)]
     #[must_use]
     pub unsafe fn get_nitrogen_archived(&self, id: usize) -> f32 {
@@ -101,6 +103,7 @@ impl super::Mixture {
 
         *self.nitrogen_archived.get_unchecked(id)
     }
+
     #[inline(always)]
     #[must_use]
     pub unsafe fn get_toxins_archived(&self, id: usize) -> f32 {
@@ -108,6 +111,7 @@ impl super::Mixture {
 
         *self.toxins_archived.get_unchecked(id)
     }
+
     #[inline(always)]
     #[must_use]
     pub unsafe fn get_sleeping_agent_archived(&self, id: usize) -> f32 {
@@ -115,6 +119,7 @@ impl super::Mixture {
 
         *self.sleeping_agent_archived.get_unchecked(id)
     }
+
     #[inline(always)]
     #[must_use]
     pub unsafe fn get_agent_b_archived(&self, id: usize) -> f32 {
@@ -122,6 +127,7 @@ impl super::Mixture {
 
         *self.agent_b_archived.get_unchecked(id)
     }
+
     #[inline(always)]
     #[must_use]
     pub unsafe fn get_temperature_archived(&self, id: usize) -> f32 {
