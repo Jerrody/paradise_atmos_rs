@@ -188,14 +188,14 @@ pub fn set_last_share(value: &Value) {
 pub fn get_heat_capacity() {
     profile_proc!("get_heat_capacity");
 
-    value!(unsafe { MIXTURES.get_heat_capacity(id!(src)) })
+    value!(unsafe { MIXTURES.heat_capacity(id!(src)) })
 }
 
 #[hook("/datum/gas_mixture/proc/total_moles")]
 pub fn get_total_moles() {
     profile_proc!("get_total_moles");
 
-    value!(unsafe { MIXTURES.get_total_moles(id!(src)) })
+    value!(unsafe { MIXTURES.total_moles(id!(src)) })
 }
 
 #[hook("/datum/gas_mixture/proc/total_trace_moles")]
@@ -209,7 +209,7 @@ pub fn get_total_trace_moles() {
 pub fn get_pressure() {
     profile_proc!("get_pressure");
 
-    value!(unsafe { MIXTURES.get_pressure(id!(src)) })
+    value!(unsafe { MIXTURES.return_pressure(id!(src)) })
 }
 
 // I'm not sure that this thing was made by a person with good mental health in DM.
@@ -225,7 +225,7 @@ pub fn return_volume() {
 pub fn get_thermal_energy() {
     profile_proc!("get_thermal_energy");
 
-    value!(unsafe { MIXTURES.get_thermal_energy(id!(src)) })
+    value!(unsafe { MIXTURES.thermal_energy(id!(src)) })
 }
 
 #[hook("/datum/gas_mixture/proc/react")]
@@ -290,35 +290,6 @@ pub fn copy_from(sample: &Value) {
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/copy_from_turf")]
-pub fn copy_from_turf(
-    turf_model: &Value,
-    initial_model_temperature: &Value,
-    initial_model_parent_temperature: &Value,
-) {
-    profile_proc!("copy_from_turf");
-
-    let turf_model = unsafe { Turf::new(turf_model) };
-    let initial_model_temperature =
-        unsafe { initial_model_temperature.as_number().unwrap_unchecked() };
-    let initial_model_parent_temperature = unsafe {
-        initial_model_parent_temperature
-            .as_number()
-            .unwrap_unchecked()
-    };
-
-    unsafe {
-        MIXTURES.copy_from_turf(
-            id!(src),
-            turf_model,
-            initial_model_temperature,
-            initial_model_parent_temperature,
-        )
-    }
-
-    null!()
-}
-
 #[hook("/datum/gas_mixture/proc/check_turf")]
 pub fn check_turf(turf_model: &Value, atmos_adjacent_turfs: &Value) {
     profile_proc!("check_turf");
@@ -360,7 +331,16 @@ pub fn temperature_share(sharer: &Value, conduction_coefficient: &Value) {
     let conduction_coefficient = unsafe { conduction_coefficient.as_number().unwrap_unchecked() };
 
     unsafe {
-        MIXTURES.temperature_share(id!(src), id!(sharer), conduction_coefficient);
+        let id = id!(src);
+        let sharer_id = id!(sharer);
+
+        MIXTURES.temperature_share(
+            id!(src),
+            id!(sharer),
+            MIXTURES.get_temperature_archived(id),
+            MIXTURES.get_temperature_archived(sharer_id),
+            conduction_coefficient,
+        );
     }
 
     null!()

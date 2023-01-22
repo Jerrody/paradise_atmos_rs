@@ -71,8 +71,8 @@ pub fn quantize(value: f32) -> f32 {
 #[inline(always)]
 #[must_use]
 pub fn calculate_heat_capacity(
-    carbon_dioxide: f32,
     oxygen: f32,
+    carbon_dioxide: f32,
     nitrogen: f32,
     toxins: f32,
     sleeping_agent: f32,
