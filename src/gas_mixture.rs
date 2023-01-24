@@ -817,8 +817,8 @@ impl Mixture {
         profile!("mimic");
 
         let temperature_archived = self.get_temperature_archived(id);
-        atmos_adjacent_turfs += 1.0;
 
+        atmos_adjacent_turfs += 1.0;
         let delta_oxygen =
             quantize(self.get_oxygen_archived(id) - turf_model.oxygen) / atmos_adjacent_turfs;
         let delta_carbon_dioxide =
