@@ -802,25 +802,28 @@ impl Mixture {
         turf_model: Turf,
         model_thermal_conductivity: f32,
         model_heat_capacity: f32,
-        atmos_adjacent_turfs: f32,
+        mut atmos_adjacent_turfs: f32,
     ) -> f32 {
         profile!("mimic");
 
-        let delta_oxygen = quantize(self.get_oxygen_archived(id) - turf_model.oxygen)
-            / (atmos_adjacent_turfs + 1.0);
+        let temperature_archived = self.get_temperature_archived(id);
+        atmos_adjacent_turfs += 1.0;
+
+        let delta_oxygen =
+            quantize(self.get_oxygen_archived(id) - turf_model.oxygen) / atmos_adjacent_turfs;
         let delta_carbon_dioxide =
             quantize(self.get_carbon_dioxide_archived(id) - turf_model.carbon_dioxide)
-                / (atmos_adjacent_turfs + 1.0);
-        let delta_nitrogen = quantize(self.get_nitrogen_archived(id) - turf_model.nitrogen)
-            / (atmos_adjacent_turfs + 1.0);
-        let delta_toxins = quantize(self.get_toxins_archived(id) - turf_model.toxins)
-            / (atmos_adjacent_turfs + 1.0);
+                / atmos_adjacent_turfs;
+        let delta_nitrogen =
+            quantize(self.get_nitrogen_archived(id) - turf_model.nitrogen) / atmos_adjacent_turfs;
+        let delta_toxins =
+            quantize(self.get_toxins_archived(id) - turf_model.toxins) / atmos_adjacent_turfs;
         let delta_sleeping_agent =
             quantize(self.get_sleeping_agent_archived(id) - turf_model.sleeping_agent)
-                / (atmos_adjacent_turfs + 1.0);
-        let delta_agent_b = quantize(self.get_agent_b_archived(id) - turf_model.agent_b)
-            / (atmos_adjacent_turfs + 1.0);
-        let delta_temperature = self.get_temperature_archived(id) - turf_model.temperature;
+                / atmos_adjacent_turfs;
+        let delta_agent_b =
+            quantize(self.get_agent_b_archived(id) - turf_model.agent_b) / atmos_adjacent_turfs;
+        let delta_temperature = temperature_archived - turf_model.temperature;
 
         let mut old_self_heat_capacity = 0.0;
         let mut heat_capacity_transferred = 0.0;
@@ -856,7 +859,7 @@ impl Mixture {
         }
 
         self.set_oxygen(id, self.get_oxygen(id) - delta_oxygen);
-        self.set_carbon_dioxide(id, self.get_oxygen(id) - delta_carbon_dioxide);
+        self.set_carbon_dioxide(id, self.get_carbon_dioxide(id) - delta_carbon_dioxide);
         self.set_nitrogen(id, self.get_nitrogen(id) - delta_nitrogen);
         self.set_toxins(id, self.get_toxins(id) - delta_toxins);
         self.set_sleeping_agent(id, self.get_sleeping_agent(id) - delta_sleeping_agent);
@@ -884,7 +887,7 @@ impl Mixture {
                 self.set_temperature(
                     id,
                     (old_self_heat_capacity * self.get_temperature(id)
-                        - heat_capacity_transferred * self.get_temperature_archived(id))
+                        - heat_capacity_transferred * temperature_archived)
                         / new_self_heat_capacity,
                 );
             }
@@ -900,8 +903,7 @@ impl Mixture {
         if (delta_temperature > MINIMUM_TEMPERATURE_TO_MOVE)
             || moved_moles.abs() > MINIMUM_MOLES_DELTA_TO_MOVE
         {
-            let delta_pressure = self.get_temperature_archived(id)
-                * (self.total_moles(id) + moved_moles)
+            let delta_pressure = temperature_archived * (self.total_moles(id) + moved_moles)
                 - turf_model.temperature
                     * (turf_model.oxygen
                         + turf_model.carbon_dioxide
@@ -909,6 +911,7 @@ impl Mixture {
                         + turf_model.toxins
                         + turf_model.sleeping_agent
                         + turf_model.agent_b);
+
             delta_pressure * R_IDEAL_GAS_EQUATION / self.get_volume(id)
         } else {
             0.0
@@ -925,7 +928,8 @@ impl Mixture {
     ) {
         profile!("temperature_mimic");
 
-        let delta_temperature = self.get_temperature(id) - model_temperature;
+        let temperature = self.get_temperature(id);
+        let delta_temperature = temperature - model_temperature;
 
         if delta_temperature.abs() > MINIMUM_TEMPERATURE_DELTA_TO_CONSIDER {
             let self_heat_capacity = self.heat_capacity(id);
@@ -938,7 +942,7 @@ impl Mixture {
                     * (self_heat_capacity * model_heat_capacity
                         / (self_heat_capacity + model_heat_capacity));
 
-                self.set_temperature(id, self.get_temperature(id) - heat / self_heat_capacity);
+                self.set_temperature(id, temperature - heat / self_heat_capacity);
             }
         }
     }
@@ -952,22 +956,19 @@ impl Mixture {
     ) {
         profile!("temperature_turf_share");
 
-        let temperature_name = unsafe { string_ref!("temperature") };
+        let temperature_name = string_ref!("temperature");
 
-        let turf_sharer_heat_capacity = unsafe {
-            turf_sharer
-                .get_number(string_ref!("heat_capacity"))
-                .unwrap_unchecked()
-        };
-        let turf_sharer_temperature = unsafe {
-            turf_sharer
-                .get_number(temperature_name.clone())
-                .unwrap_unchecked()
-        };
+        // TODO: Make the setters and getters methods for the turfs.
+        let turf_sharer_temperature = turf_sharer
+            .get_number(temperature_name.clone())
+            .unwrap_unchecked();
 
         let delta_temperature = self.get_temperature_archived(id) - turf_sharer_temperature;
 
         if delta_temperature.abs() > MINIMUM_TEMPERATURE_DELTA_TO_CONSIDER {
+            let turf_sharer_heat_capacity = turf_sharer
+                .get_number(string_ref!("heat_capacity"))
+                .unwrap_unchecked();
             let self_heat_capacity = self.heat_capacity(id);
 
             if (turf_sharer_heat_capacity > MINIMUM_HEAT_CAPACITY)
@@ -979,14 +980,12 @@ impl Mixture {
                         / (self_heat_capacity + turf_sharer_heat_capacity));
 
                 self.set_temperature(id, self.get_temperature(id) - heat / self_heat_capacity);
-                unsafe {
-                    turf_sharer
-                        .set(
-                            temperature_name,
-                            turf_sharer_temperature + heat / turf_sharer_heat_capacity,
-                        )
-                        .unwrap_unchecked()
-                };
+                turf_sharer
+                    .set(
+                        temperature_name,
+                        turf_sharer_temperature + heat / turf_sharer_heat_capacity,
+                    )
+                    .unwrap_unchecked();
             }
         }
     }
@@ -996,73 +995,59 @@ impl Mixture {
     pub unsafe fn compare(&self, id: usize, sample_id: usize) -> bool {
         profile!("compare");
 
-        // TODO: Can be minimized into helper function.
         let oxygen = self.get_oxygen(id);
         let sample_oxygen = self.get_oxygen(sample_id);
-        if ((oxygen - self.get_oxygen(sample_id)).abs() > MINIMUM_AIR_TO_SUSPEND)
-            && ((oxygen < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_oxygen)
-                || (oxygen > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_oxygen))
-        {
+        if Self::compare_condition(oxygen, sample_oxygen) {
             return false;
         }
 
         let nitrogen = self.get_nitrogen(id);
         let sample_nitrogen = self.get_nitrogen(sample_id);
-        if ((nitrogen - sample_nitrogen).abs() > MINIMUM_AIR_TO_SUSPEND)
-            && ((nitrogen < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_nitrogen)
-                || (nitrogen > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_nitrogen))
-        {
+        if Self::compare_condition(nitrogen, sample_nitrogen) {
             return false;
         }
 
         let carbon_dioxide = self.get_carbon_dioxide(id);
         let sample_carbon_dioxide = self.get_carbon_dioxide(sample_id);
-        if ((carbon_dioxide - sample_carbon_dioxide).abs() > MINIMUM_AIR_TO_SUSPEND)
-            && ((carbon_dioxide < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_carbon_dioxide)
-                || (carbon_dioxide > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_carbon_dioxide))
-        {
+        if Self::compare_condition(carbon_dioxide, sample_carbon_dioxide) {
             return false;
         }
 
         let toxins = self.get_toxins(id);
         let sample_toxins = self.get_toxins(sample_id);
-        if ((toxins - sample_toxins).abs() > MINIMUM_AIR_TO_SUSPEND)
-            && ((toxins < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_toxins)
-                || (toxins > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_toxins))
-        {
+        if Self::compare_condition(toxins, sample_toxins) {
             return false;
         }
 
         let sleeping_agent = self.get_sleeping_agent(id);
         let sample_sleeping_agent = self.get_sleeping_agent(sample_id);
-        if ((sleeping_agent - sample_sleeping_agent).abs() > MINIMUM_AIR_TO_SUSPEND)
-            && ((sleeping_agent < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_sleeping_agent)
-                || (sleeping_agent > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_sleeping_agent))
-        {
+        if Self::compare_condition(sleeping_agent, sample_sleeping_agent) {
             return false;
         }
 
         let agent_b = self.get_agent_b(id);
         let sample_agent_b = self.get_agent_b(sample_id);
-        if ((agent_b - sample_agent_b).abs() > MINIMUM_AIR_TO_SUSPEND)
-            && ((agent_b < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_agent_b)
-                || (agent_b > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_agent_b))
-        {
+        if Self::compare_condition(agent_b, sample_agent_b) {
             return false;
         }
 
         let temperature = self.get_temperature(id);
         let sample_temperature = self.get_temperature(sample_id);
         if self.total_moles(id) > MINIMUM_AIR_TO_SUSPEND
-            && ((temperature - sample_temperature).abs() > MINIMUM_TEMPERATURE_DELTA_TO_SUSPEND)
-            && ((temperature < (1.0 - MINIMUM_TEMPERATURE_RATIO_TO_SUSPEND) * sample_temperature)
-                || (temperature
-                    > (1.0 + MINIMUM_TEMPERATURE_RATIO_TO_SUSPEND) * sample_temperature))
+            && Self::compare_condition(temperature, sample_temperature)
         {
             return false;
         }
 
         true
+    }
+
+    #[inline(always)]
+    #[must_use]
+    fn compare_condition(self_value: f32, sample_value: f32) -> bool {
+        ((self_value - sample_value).abs() > MINIMUM_AIR_TO_SUSPEND)
+            && ((self_value < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_value)
+                || (self_value > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_value))
     }
 
     #[inline(always)]
