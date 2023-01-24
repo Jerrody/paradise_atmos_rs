@@ -19,6 +19,7 @@ use auxtools::{StringRef, Value};
 /// So, you load to the cache whole **68** `bytes`! And use only 4 bytes :) == waste CPU time on useless action.
 /// I hope I answered your question!
 pub static mut MIXTURES: Lazy<Mixture> = Lazy::new(Mixture::new);
+static mut IS_INITIALIZED_MIXTURES: bool = false;
 
 #[derive(Debug, Default)]
 pub struct Mixture {
@@ -56,10 +57,18 @@ impl Mixture {
     #[must_use]
     #[inline(always)]
     fn new() -> Self {
+        if unsafe { IS_INITIALIZED_MIXTURES } {
+            panic!();
+        }
+
         let vec_of_zeros = vec![Default::default(); Self::DEFAULT_ALLOCATED_GAS_MIXTURES_COUNT];
         let vec_of_cell_volumes =
             vec![Self::CELL_VOLUME; Self::DEFAULT_ALLOCATED_GAS_MIXTURES_COUNT];
         let vec_of_bools = vec![Default::default(); Self::DEFAULT_ALLOCATED_GAS_MIXTURES_COUNT];
+
+        unsafe {
+            IS_INITIALIZED_MIXTURES = true;
+        }
 
         Self {
             oxygen: vec_of_zeros.clone(),
