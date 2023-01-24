@@ -255,9 +255,7 @@ pub fn archive() {
 pub fn merge(giver: &Value) {
     profile_proc!("merge");
 
-    unsafe { MIXTURES.merge(id!(src), id!(giver)) }
-
-    null!()
+    value!(unsafe { MIXTURES.merge(id!(src), id!(giver)) })
 }
 
 #[hook("/datum/gas_mixture/proc/remove")]

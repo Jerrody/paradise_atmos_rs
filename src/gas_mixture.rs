@@ -504,21 +504,12 @@ impl Mixture {
         let delta_agent_b = (agent_b_archived - turf_model.agent_b) / atmos_adjacent_turfs;
         let delta_temperature = self.get_temperature_archived(id) - turf_model.temperature;
 
-        // FIXME: Can be minimized and etc., anyway, this is 💀
-        if ((delta_oxygen.abs() > MINIMUM_AIR_TO_SUSPEND)
-            && (delta_oxygen.abs() >= oxygen_archived * MINIMUM_AIR_RATIO_TO_SUSPEND))
-            || ((delta_carbon_dioxide.abs() > MINIMUM_AIR_TO_SUSPEND)
-                && (delta_carbon_dioxide.abs()
-                    >= carbon_dioxide_archived * MINIMUM_AIR_RATIO_TO_SUSPEND))
-            || ((delta_nitrogen.abs() > MINIMUM_AIR_TO_SUSPEND)
-                && (delta_nitrogen.abs() >= nitrogen_archived * MINIMUM_AIR_RATIO_TO_SUSPEND))
-            || ((delta_toxins.abs() > MINIMUM_AIR_TO_SUSPEND)
-                && (delta_toxins.abs() >= toxins_archived * MINIMUM_AIR_RATIO_TO_SUSPEND))
-            || ((delta_sleeping_agent.abs() > MINIMUM_AIR_TO_SUSPEND)
-                && (delta_sleeping_agent.abs()
-                    >= sleeping_agent_archived * MINIMUM_AIR_RATIO_TO_SUSPEND))
-            || ((delta_agent_b.abs() > MINIMUM_AIR_TO_SUSPEND)
-                && (delta_agent_b.abs() >= agent_b_archived * MINIMUM_AIR_RATIO_TO_SUSPEND))
+        if Self::check_turf_condition(delta_oxygen.abs(), oxygen_archived)
+            || Self::check_turf_condition(delta_carbon_dioxide.abs(), carbon_dioxide_archived)
+            || Self::check_turf_condition(delta_nitrogen.abs(), nitrogen_archived)
+            || Self::check_turf_condition(delta_toxins.abs(), toxins_archived)
+            || Self::check_turf_condition(delta_sleeping_agent.abs(), sleeping_agent_archived)
+            || Self::check_turf_condition(delta_agent_b.abs(), agent_b_archived)
             || delta_temperature.abs() > MINIMUM_TEMPERATURE_DELTA_TO_SUSPEND
         {
             return false;
@@ -548,25 +539,24 @@ impl Mixture {
         let delta_agent_b = agent_b - turf_model.agent_b;
         let delta_temperature = self.get_temperature(id) - turf_model.temperature;
 
-        // FIXME: Can be minimized and etc., anyway, this is 💀
-        if ((delta_oxygen.abs() > MINIMUM_AIR_TO_SUSPEND)
-            && (delta_oxygen.abs() >= oxygen * MINIMUM_AIR_RATIO_TO_SUSPEND))
-            || ((delta_carbon_dioxide.abs() > MINIMUM_AIR_TO_SUSPEND)
-                && (delta_carbon_dioxide.abs() >= carbon_dioxide * MINIMUM_AIR_RATIO_TO_SUSPEND))
-            || ((delta_nitrogen.abs() > MINIMUM_AIR_TO_SUSPEND)
-                && (delta_nitrogen.abs() >= nitrogen * MINIMUM_AIR_RATIO_TO_SUSPEND))
-            || ((delta_toxins.abs() > MINIMUM_AIR_TO_SUSPEND)
-                && (delta_toxins.abs() >= toxins * MINIMUM_AIR_RATIO_TO_SUSPEND))
-            || ((delta_sleeping_agent.abs() > MINIMUM_AIR_TO_SUSPEND)
-                && (delta_sleeping_agent.abs() >= sleeping_agent * MINIMUM_AIR_RATIO_TO_SUSPEND))
-            || ((delta_agent_b.abs() > MINIMUM_AIR_TO_SUSPEND)
-                && (delta_agent_b.abs() >= agent_b * MINIMUM_AIR_RATIO_TO_SUSPEND))
+        if Self::check_turf_condition(delta_oxygen.abs(), oxygen)
+            || Self::check_turf_condition(delta_carbon_dioxide.abs(), carbon_dioxide)
+            || Self::check_turf_condition(delta_nitrogen.abs(), nitrogen)
+            || Self::check_turf_condition(delta_toxins.abs(), toxins)
+            || Self::check_turf_condition(delta_sleeping_agent.abs(), sleeping_agent)
+            || Self::check_turf_condition(delta_agent_b.abs(), agent_b)
             || delta_temperature.abs() > MINIMUM_TEMPERATURE_DELTA_TO_SUSPEND
         {
             return false;
         }
 
         true
+    }
+
+    #[must_use]
+    #[inline(always)]
+    fn check_turf_condition(value_01: f32, value_02: f32) -> bool {
+        (value_01 > MINIMUM_AIR_TO_SUSPEND) && (value_01 >= value_02 * MINIMUM_AIR_RATIO_TO_SUSPEND)
     }
 
     #[must_use]
