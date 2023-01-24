@@ -335,13 +335,14 @@ impl Mixture {
         self.set_temperature_archived(id, self.get_temperature(id));
     }
 
+    #[must_use]
     #[cfg_attr(feature = "profile", inline(never))]
     #[cfg_attr(not(feature = "profile"), inline(always))]
-    pub unsafe fn merge(&mut self, id: usize, giver_id: usize) {
+    pub unsafe fn merge(&mut self, id: usize, giver_id: usize) -> bool {
         profile!("merge");
 
         if !self.get_is_initialized(giver_id) {
-            return;
+            return false;
         }
 
         if (self.get_temperature(id) - self.get_temperature(giver_id)).abs()
@@ -372,6 +373,8 @@ impl Mixture {
             self.get_sleeping_agent(id) + self.get_sleeping_agent(giver_id),
         );
         self.set_agent_b(id, self.get_agent_b(id) + self.get_agent_b(giver_id));
+
+        true
     }
 
     #[cfg_attr(feature = "profile", inline(never))]
@@ -388,12 +391,19 @@ impl Mixture {
             return;
         }
 
-        let removed_oxygen_quantized = quantize(self.get_oxygen(id) / sum * amount);
-        let removed_nitrogen_quantized = quantize(self.get_nitrogen(id) / sum * amount);
-        let removed_carbon_dioxide_quantized = quantize(self.get_carbon_dioxide(id) / sum * amount);
-        let removed_toxins_quantized = quantize(self.get_toxins(id) / sum * amount);
-        let removed_sleeping_agent_quantized = quantize(self.get_sleeping_agent(id) / sum * amount);
-        let removed_agent_b_quantized = quantize(self.get_agent_b(id) / sum * amount);
+        let oxygen = self.get_oxygen(id);
+        let nitrogen = self.get_nitrogen(id);
+        let carbon_dioxide = self.get_carbon_dioxide(id);
+        let toxins = self.get_toxins(id);
+        let sleeping_agent = self.get_sleeping_agent(id);
+        let agent_b = self.get_agent_b(id);
+
+        let removed_oxygen_quantized = quantize(oxygen / sum * amount);
+        let removed_nitrogen_quantized = quantize(nitrogen / sum * amount);
+        let removed_carbon_dioxide_quantized = quantize(carbon_dioxide / sum * amount);
+        let removed_toxins_quantized = quantize(toxins / sum * amount);
+        let removed_sleeping_agent_quantized = quantize(sleeping_agent / sum * amount);
+        let removed_agent_b_quantized = quantize(agent_b / sum * amount);
 
         self.set_oxygen(removed_id, removed_oxygen_quantized);
         self.set_nitrogen(removed_id, removed_nitrogen_quantized);
@@ -403,18 +413,12 @@ impl Mixture {
         self.set_agent_b(removed_id, removed_agent_b_quantized);
         self.set_temperature(removed_id, self.get_temperature(id));
 
-        self.set_oxygen(id, self.get_oxygen(id) - removed_oxygen_quantized);
-        self.set_nitrogen(id, self.get_nitrogen(id) - removed_nitrogen_quantized);
-        self.set_carbon_dioxide(
-            id,
-            self.get_carbon_dioxide(id) - removed_carbon_dioxide_quantized,
-        );
-        self.set_toxins(id, self.get_toxins(id) - removed_toxins_quantized);
-        self.set_sleeping_agent(
-            id,
-            self.get_sleeping_agent(id) - removed_sleeping_agent_quantized,
-        );
-        self.set_agent_b(id, self.get_agent_b(id) - removed_agent_b_quantized);
+        self.set_oxygen(id, oxygen - removed_oxygen_quantized);
+        self.set_nitrogen(id, nitrogen - removed_nitrogen_quantized);
+        self.set_carbon_dioxide(id, carbon_dioxide - removed_carbon_dioxide_quantized);
+        self.set_toxins(id, toxins - removed_toxins_quantized);
+        self.set_sleeping_agent(id, sleeping_agent - removed_sleeping_agent_quantized);
+        self.set_agent_b(id, agent_b - removed_agent_b_quantized);
     }
 
     #[cfg_attr(feature = "profile", inline(never))]
@@ -430,12 +434,19 @@ impl Mixture {
 
         ratio = ratio.min(1.0);
 
-        let removed_oxygen_quantized = quantize(self.get_oxygen(id) * ratio);
-        let removed_nitrogen_quantized = quantize(self.get_nitrogen(id) * ratio);
-        let removed_carbon_dioxide_quantized = quantize(self.get_carbon_dioxide(id) * ratio);
-        let removed_toxins_quantized = quantize(self.get_toxins(id) * ratio);
-        let removed_sleeping_agent_quantized = quantize(self.get_sleeping_agent(id) * ratio);
-        let removed_agent_b_quantized = quantize(self.get_agent_b(id) * ratio);
+        let oxygen = self.get_oxygen(id);
+        let nitrogen = self.get_nitrogen(id);
+        let carbon_dioxide = self.get_carbon_dioxide(id);
+        let toxins = self.get_toxins(id);
+        let sleeping_agent = self.get_sleeping_agent(id);
+        let agent_b = self.get_agent_b(id);
+
+        let removed_oxygen_quantized = quantize(oxygen * ratio);
+        let removed_nitrogen_quantized = quantize(nitrogen * ratio);
+        let removed_carbon_dioxide_quantized = quantize(carbon_dioxide * ratio);
+        let removed_toxins_quantized = quantize(toxins * ratio);
+        let removed_sleeping_agent_quantized = quantize(sleeping_agent * ratio);
+        let removed_agent_b_quantized = quantize(agent_b * ratio);
 
         self.set_oxygen(removed_id, removed_oxygen_quantized);
         self.set_nitrogen(removed_id, removed_nitrogen_quantized);
@@ -445,12 +456,12 @@ impl Mixture {
         self.set_agent_b(removed_id, removed_agent_b_quantized);
         self.set_temperature(removed_id, self.get_temperature(id));
 
-        self.set_oxygen(id, self.get_oxygen(id) - removed_oxygen_quantized);
-        self.set_nitrogen(id, self.get_oxygen(id) - removed_nitrogen_quantized);
-        self.set_carbon_dioxide(id, self.get_oxygen(id) - removed_carbon_dioxide_quantized);
-        self.set_toxins(id, self.get_oxygen(id) - removed_toxins_quantized);
-        self.set_sleeping_agent(id, self.get_oxygen(id) - removed_sleeping_agent_quantized);
-        self.set_agent_b(id, self.get_oxygen(id) - removed_agent_b_quantized);
+        self.set_oxygen(id, oxygen - removed_oxygen_quantized);
+        self.set_nitrogen(id, nitrogen - removed_nitrogen_quantized);
+        self.set_carbon_dioxide(id, carbon_dioxide - removed_carbon_dioxide_quantized);
+        self.set_toxins(id, toxins - removed_toxins_quantized);
+        self.set_sleeping_agent(id, sleeping_agent - removed_sleeping_agent_quantized);
+        self.set_agent_b(id, agent_b - removed_agent_b_quantized);
     }
 
     #[inline(always)]
