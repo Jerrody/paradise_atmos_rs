@@ -415,7 +415,6 @@ impl Mixture {
     pub unsafe fn remove_ratio(&mut self, id: usize, removed_id: usize, mut ratio: f32) {
         profile!("remove_ratio");
 
-        // FIXME: Change this place of code. We can internally affect on the instance of `gas_mixture`.
         if ratio <= 0.0 {
             self.unregister_by_id(removed_id);
 
@@ -465,7 +464,7 @@ impl Mixture {
         &self,
         id: usize,
         turf_model: Turf,
-        atmos_adjacent_turfs: f32,
+        mut atmos_adjacent_turfs: f32,
     ) -> bool {
         profile!("check_turf");
 
@@ -476,15 +475,15 @@ impl Mixture {
         let sleeping_agent_archived = self.get_sleeping_agent_archived(id);
         let agent_b_archived = self.get_agent_b_archived(id);
 
-        let delta_oxygen = (oxygen_archived - turf_model.oxygen) / (atmos_adjacent_turfs + 1.0);
+        atmos_adjacent_turfs += 1.0;
+        let delta_oxygen = (oxygen_archived - turf_model.oxygen) / atmos_adjacent_turfs;
         let delta_carbon_dioxide =
-            (carbon_dioxide_archived - turf_model.carbon_dioxide) / (atmos_adjacent_turfs + 1.0);
-        let delta_nitrogen =
-            (nitrogen_archived - turf_model.nitrogen) / (atmos_adjacent_turfs + 1.0);
-        let delta_toxins = (toxins_archived - turf_model.toxins) / (atmos_adjacent_turfs + 1.0);
+            (carbon_dioxide_archived - turf_model.carbon_dioxide) / atmos_adjacent_turfs;
+        let delta_nitrogen = (nitrogen_archived - turf_model.nitrogen) / atmos_adjacent_turfs;
+        let delta_toxins = (toxins_archived - turf_model.toxins) / atmos_adjacent_turfs;
         let delta_sleeping_agent =
-            (sleeping_agent_archived - turf_model.sleeping_agent) / (atmos_adjacent_turfs + 1.0);
-        let delta_agent_b = (agent_b_archived - turf_model.agent_b) / (atmos_adjacent_turfs + 1.0);
+            (sleeping_agent_archived - turf_model.sleeping_agent) / atmos_adjacent_turfs;
+        let delta_agent_b = (agent_b_archived - turf_model.agent_b) / atmos_adjacent_turfs;
         let delta_temperature = self.get_temperature_archived(id) - turf_model.temperature;
 
         // FIXME: Can be minimized and etc., anyway, this is 💀
@@ -555,10 +554,14 @@ impl Mixture {
     #[must_use]
     #[cfg_attr(feature = "profile", inline(never))]
     #[cfg_attr(not(feature = "profile"), inline(always))]
-    pub unsafe fn share(&mut self, id: usize, sharer_id: usize, atmos_adjacent_turfs: f32) -> f32 {
+    pub unsafe fn share(
+        &mut self,
+        id: usize,
+        sharer_id: usize,
+        mut atmos_adjacent_turfs: f32,
+    ) -> f32 {
         profile!("share");
 
-        // FIXME: Change this place of code. We can internally affect on the instance of `gas_mixture`.
         if !self.get_is_initialized(sharer_id) {
             return 0.0;
         }
@@ -590,20 +593,21 @@ impl Mixture {
             return 0.0;
         }
 
+        atmos_adjacent_turfs += 1.0;
         let delta_oxygen =
-            quantize(oxygen_archived - sharer_oxygen_archived) / (atmos_adjacent_turfs + 1.0);
+            quantize(oxygen_archived - sharer_oxygen_archived) / atmos_adjacent_turfs;
         let delta_carbon_dioxide =
             quantize(carbon_dioxide_archived - sharer_carbon_dioxide_archived)
-                / (atmos_adjacent_turfs + 1.0);
+                / atmos_adjacent_turfs;
         let delta_nitrogen =
-            quantize(nitrogen_archived - sharer_nitrogen_archived) / (atmos_adjacent_turfs + 1.0);
+            quantize(nitrogen_archived - sharer_nitrogen_archived) / atmos_adjacent_turfs;
         let delta_toxins =
-            quantize(toxins_archived - sharer_toxins_archived) / (atmos_adjacent_turfs + 1.0);
+            quantize(toxins_archived - sharer_toxins_archived) / atmos_adjacent_turfs;
         let delta_sleeping_agent =
             quantize(sleeping_agent_archived - sharer_sleeping_agent_archived)
-                / (atmos_adjacent_turfs + 1.0);
+                / atmos_adjacent_turfs;
         let delta_agent_b =
-            quantize(agent_b_archived - sharer_agent_b_archived) / (atmos_adjacent_turfs + 1.0);
+            quantize(agent_b_archived - sharer_agent_b_archived) / atmos_adjacent_turfs;
         let delta_temperature = temperature_archived - sharer_temperature_archived;
 
         let mut old_self_heat_capacity = 0.0;
