@@ -881,6 +881,7 @@ impl Mixture {
             + delta_toxins
             + delta_sleeping_agent
             + delta_agent_b;
+
         self.set_last_share(
             id,
             delta_oxygen.abs()
@@ -945,8 +946,8 @@ impl Mixture {
         if delta_temperature.abs() > MINIMUM_TEMPERATURE_DELTA_TO_CONSIDER {
             let self_heat_capacity = self.heat_capacity(id);
 
-            if (model_heat_capacity > MINIMUM_HEAT_CAPACITY)
-                && (self_heat_capacity > MINIMUM_HEAT_CAPACITY)
+            if model_heat_capacity > MINIMUM_HEAT_CAPACITY
+                && self_heat_capacity > MINIMUM_HEAT_CAPACITY
             {
                 let heat = conduction_coefficient
                     * delta_temperature
