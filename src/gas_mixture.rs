@@ -224,33 +224,35 @@ impl Mixture {
 
         let mut reacting = false; //set to 1 if a notable reaction occured (used by pipe_network)
 
-        if self.get_agent_b(id) != 0.0
-            && self.get_temperature(id) > 900.0
-            && self.get_toxins(id) > MINIMUM_HEAT_CAPACITY
-            && self.get_carbon_dioxide(id) > MINIMUM_HEAT_CAPACITY
+        let temperature = self.get_temperature(id);
+        let agent_b = self.get_agent_b(id);
+        let toxins = self.get_toxins(id);
+        let carbon_dioxide = self.get_carbon_dioxide(id);
+
+        if agent_b != 0.0
+            && temperature > 900.0
+            && toxins > MINIMUM_HEAT_CAPACITY
+            && carbon_dioxide > MINIMUM_HEAT_CAPACITY
         {
-            let gases = [
-                self.get_carbon_dioxide(id) * 0.75,
-                self.get_toxins(id) * 0.25,
-                self.get_agent_b(id) * 0.05,
-            ];
+            let gases = [carbon_dioxide * 0.75, toxins * 0.25, agent_b * 0.05];
 
             let reaction_rate = gases
                 .into_iter()
                 .min_by(|a, b| a.total_cmp(b))
                 .unwrap_unchecked();
 
-            self.set_carbon_dioxide(id, self.get_carbon_dioxide(id) - reaction_rate);
+            self.set_carbon_dioxide(id, carbon_dioxide - reaction_rate);
             self.set_oxygen(id, self.get_oxygen(id) + reaction_rate);
-            self.set_agent_b(id, self.get_agent_b(id) - reaction_rate * 0.05);
+            self.set_agent_b(id, agent_b - reaction_rate * 0.05);
             self.set_temperature(
                 id,
-                self.get_temperature(id) + (reaction_rate * 20_000.0) / self.heat_capacity(id),
+                temperature + (reaction_rate * 20_000.0) / self.heat_capacity(id),
             );
 
             reacting = true;
         }
 
+        self.set_fuel_burnt(id, 0.0);
         if self.get_temperature(id) > FIRE_MINIMUM_TEMPERATURE_TO_EXIST && self.fire(id) > 0.0 {
             reacting = true;
         }
@@ -264,8 +266,6 @@ impl Mixture {
     unsafe fn fire(&mut self, id: usize) -> f32 {
         profile!("fire");
 
-        self.set_fuel_burnt(id, 0.0);
-
         let mut energy_released = 0.0;
         let old_heat_capacity = self.heat_capacity(id);
 
@@ -273,11 +273,12 @@ impl Mixture {
         if self.get_toxins(id) > MINIMUM_HEAT_CAPACITY {
             let plasma_burn_rate;
             let oxygen_burn_rate;
+            let temperature = self.get_temperature(id);
 
-            let temperature_scale = if self.get_temperature(id) > PLASMA_UPPER_TEMPERATURE {
+            let temperature_scale = if temperature > PLASMA_UPPER_TEMPERATURE {
                 1.0
             } else {
-                (self.get_temperature(id) - PLASMA_MINIMUM_BURN_TEMPERATURE)
+                (temperature - PLASMA_MINIMUM_BURN_TEMPERATURE)
                     / (PLASMA_UPPER_TEMPERATURE - PLASMA_MINIMUM_BURN_TEMPERATURE)
             };
 
@@ -287,21 +288,18 @@ impl Mixture {
                 let toxins = self.get_toxins(id);
                 let oxygen = self.get_oxygen(id);
                 if oxygen > toxins * PLASMA_OXYGEN_FULLBURN {
-                    plasma_burn_rate = (toxins * temperature_scale) / PLASMA_BURN_RATE_DELTA
+                    plasma_burn_rate = (toxins * temperature_scale) / PLASMA_BURN_RATE_DELTA;
                 } else {
                     plasma_burn_rate = (temperature_scale * (oxygen / PLASMA_OXYGEN_FULLBURN))
                         / PLASMA_BURN_RATE_DELTA;
                 }
 
                 if plasma_burn_rate > MINIMUM_HEAT_CAPACITY {
-                    self.set_toxins(id, self.get_toxins(id) - plasma_burn_rate);
-                    self.set_oxygen(
-                        id,
-                        self.get_oxygen(id) - plasma_burn_rate * oxygen_burn_rate,
-                    );
+                    self.set_toxins(id, toxins - plasma_burn_rate);
+                    self.set_oxygen(id, oxygen - plasma_burn_rate * oxygen_burn_rate);
                     self.set_carbon_dioxide(id, self.get_carbon_dioxide(id) + plasma_burn_rate);
 
-                    energy_released += FIRE_PLASMA_ENERGY_RELEASED * (plasma_burn_rate);
+                    energy_released += FIRE_PLASMA_ENERGY_RELEASED * plasma_burn_rate;
 
                     self.set_fuel_burnt(
                         id,
