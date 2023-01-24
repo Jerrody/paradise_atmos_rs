@@ -40,6 +40,13 @@ pub fn unregister() {
     null!()
 }
 
+#[hook("/datum/gas_mixture/proc/get_is_initialized")]
+pub fn get_is_initialized() {
+    profile_proc!("unregister");
+
+    value!(unsafe { MIXTURES.get_is_initialized(id!(src)) })
+}
+
 #[hook("/datum/gas_mixture/proc/get_oxygen")]
 pub fn get_oxygen() {
     profile_proc!("get_oxygen");

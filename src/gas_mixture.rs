@@ -53,9 +53,8 @@ impl Mixture {
     /// Liters in a cell.
     const CELL_VOLUME: f32 = 2500.0;
 
-    /// TODO: Add an `cfg_attr` to disable an `inline` when `profile` or `profile_proc` enabled.
-    #[inline(always)]
     #[must_use]
+    #[inline(always)]
     fn new() -> Self {
         let vec_of_zeros = vec![Default::default(); Self::DEFAULT_ALLOCATED_GAS_MIXTURES_COUNT];
         let vec_of_cell_volumes =
@@ -86,21 +85,26 @@ impl Mixture {
 
     #[inline(always)]
     pub unsafe fn register(&mut self, src: &Value) {
-        // FIXME: Won't work as expected due to `inline` fix with adding additional `cfg_attr`.
-        profile!("register");
-
         let id = src.raw.data.id as usize;
 
-        *self.is_initialized.get_unchecked_mut(id) = true;
+        self.set_is_initialized(id, true);
     }
 
     #[inline(always)]
     pub unsafe fn unregister(&mut self, src: &Value) {
-        profile!("unregister");
-
         let id = src.raw.data.id as usize;
 
-        *self.is_initialized.get_unchecked_mut(id) = false;
+        self.set_to_default(id);
+    }
+
+    #[inline(always)]
+    pub unsafe fn unregister_by_id(&mut self, id: usize) {
+        self.set_to_default(id);
+    }
+
+    #[inline(always)]
+    unsafe fn set_to_default(&mut self, id: usize) {
+        self.set_is_initialized(id, false);
 
         self.set_oxygen(id, 0.0);
         self.set_carbon_dioxide(id, 0.0);
@@ -122,30 +126,22 @@ impl Mixture {
     }
 
     #[inline(always)]
-    pub fn unregister_by_id(&mut self, id: usize) {
-        profile!("unregister");
-
-        unsafe {
-            *self.is_initialized.get_unchecked_mut(id) = false;
-        }
+    #[must_use]
+    pub unsafe fn get_is_initialized(&self, id: usize) -> bool {
+        *self.is_initialized.get_unchecked(id)
     }
 
     #[inline(always)]
-    #[must_use]
-    pub fn get_is_initialized(&self, id: usize) -> bool {
-        profile!("get_oxygen");
-
-        unsafe { *self.is_initialized.get_unchecked(id) }
+    pub unsafe fn set_is_initialized(&mut self, id: usize, value: bool) {
+        *self.is_initialized.get_unchecked_mut(id) = value;
     }
 
     // PROCS
     // ============================================================================================
 
-    #[inline(always)]
     #[must_use]
+    #[inline(always)]
     pub unsafe fn heat_capacity(&self, id: usize) -> f32 {
-        profile!("get_heat_capacity");
-
         crate::utils::calculate_heat_capacity(
             self.get_oxygen(id),
             self.get_carbon_dioxide(id),
@@ -156,11 +152,9 @@ impl Mixture {
         )
     }
 
-    #[inline(always)]
     #[must_use]
+    #[inline(always)]
     unsafe fn get_heat_capacity_archived(&self, id: usize) -> f32 {
-        profile!("get_heat_capacity_archived");
-
         crate::utils::calculate_heat_capacity(
             self.get_oxygen_archived(id),
             self.get_carbon_dioxide_archived(id),
@@ -171,11 +165,9 @@ impl Mixture {
         )
     }
 
-    #[inline(always)]
     #[must_use]
+    #[inline(always)]
     pub unsafe fn total_moles(&self, id: usize) -> f32 {
-        profile!("get_total_moles");
-
         self.get_oxygen(id)
             + self.get_carbon_dioxide(id)
             + self.get_nitrogen(id)
@@ -184,19 +176,15 @@ impl Mixture {
             + self.get_agent_b(id)
     }
 
-    #[inline(always)]
     #[must_use]
+    #[inline(always)]
     pub unsafe fn get_total_trace_moles(&self, id: usize) -> f32 {
-        profile!("get_total_trace_moles");
-
         self.get_sleeping_agent(id) + self.get_agent_b(id)
     }
 
-    #[inline(always)]
     #[must_use]
+    #[inline(always)]
     pub unsafe fn return_pressure(&self, id: usize) -> f32 {
-        profile!("return_pressure");
-
         let volume = self.get_volume(id);
         if volume > 0.0 {
             return self.total_moles(id) * R_IDEAL_GAS_EQUATION * self.get_temperature(id) / volume;
@@ -207,23 +195,21 @@ impl Mixture {
 
     // I'm not sure that this thing was made by a person with good mental health in DM.
     // Anyway, it could cause, potentially, unexpected behavior.
-    #[inline(always)]
     #[must_use]
+    #[inline(always)]
     pub unsafe fn return_volume(&self, id: usize) -> f32 {
-        profile!("return_volume");
-
         self.get_volume(id).max(0.0)
     }
 
-    #[inline(always)]
     #[must_use]
+    #[inline(always)]
     pub unsafe fn thermal_energy(&self, id: usize) -> f32 {
-        profile!("thermal_energy");
-
         self.get_temperature(id) * self.heat_capacity(id)
     }
 
-    #[inline(always)]
+    #[must_use]
+    #[cfg_attr(feature = "profile", inline(never))]
+    #[cfg_attr(not(feature = "profile"), inline(always))]
     pub unsafe fn react(&mut self, id: usize) -> bool {
         profile!("react");
 
@@ -263,8 +249,9 @@ impl Mixture {
         reacting
     }
 
-    #[inline(always)]
     #[must_use]
+    #[cfg_attr(feature = "profile", inline(never))]
+    #[cfg_attr(not(feature = "profile"), inline(always))]
     unsafe fn fire(&mut self, id: usize) -> f32 {
         profile!("fire");
 
@@ -332,8 +319,6 @@ impl Mixture {
 
     #[inline(always)]
     pub unsafe fn archive(&mut self, id: usize) {
-        profile!("archive");
-
         self.set_oxygen_archived(id, self.get_oxygen(id));
         self.set_carbon_dioxide_archived(id, self.get_carbon_dioxide(id));
         self.set_nitrogen_archived(id, self.get_nitrogen(id));
@@ -343,10 +328,10 @@ impl Mixture {
         self.set_temperature_archived(id, self.get_temperature(id));
     }
 
-    #[rustfmt::skip]
-    #[inline(always)]
-    pub unsafe  fn merge(&mut self, id: usize, giver_id: usize) {
-        profile!("get_oxygen");
+    #[cfg_attr(feature = "profile", inline(never))]
+    #[cfg_attr(not(feature = "profile"), inline(always))]
+    pub unsafe fn merge(&mut self, id: usize, giver_id: usize) {
+        profile!("merge");
 
         if !self.get_is_initialized(giver_id) {
             return;
@@ -369,16 +354,22 @@ impl Mixture {
         }
 
         self.set_oxygen(id, self.get_oxygen(id) + self.get_oxygen(giver_id));
-        self.set_carbon_dioxide(id, self.get_carbon_dioxide(id) + self.get_carbon_dioxide(giver_id));
+        self.set_carbon_dioxide(
+            id,
+            self.get_carbon_dioxide(id) + self.get_carbon_dioxide(giver_id),
+        );
         self.set_nitrogen(id, self.get_nitrogen(id) + self.get_nitrogen(giver_id));
         self.set_toxins(id, self.get_toxins(id) + self.get_toxins(giver_id));
-        self.set_sleeping_agent(id, self.get_sleeping_agent(id) + self.get_sleeping_agent(giver_id));
+        self.set_sleeping_agent(
+            id,
+            self.get_sleeping_agent(id) + self.get_sleeping_agent(giver_id),
+        );
         self.set_agent_b(id, self.get_agent_b(id) + self.get_agent_b(giver_id));
     }
 
-    #[rustfmt::skip]
-    #[inline(always)]
-    pub unsafe  fn remove(&mut self, id: usize, removed_id: usize, mut amount: f32) {
+    #[cfg_attr(feature = "profile", inline(never))]
+    #[cfg_attr(not(feature = "profile"), inline(always))]
+    pub unsafe fn remove(&mut self, id: usize, removed_id: usize, mut amount: f32) {
         profile!("remove");
 
         let sum = self.total_moles(id);
@@ -407,15 +398,21 @@ impl Mixture {
 
         self.set_oxygen(id, self.get_oxygen(id) - removed_oxygen_quantized);
         self.set_nitrogen(id, self.get_nitrogen(id) - removed_nitrogen_quantized);
-        self.set_carbon_dioxide(id, self.get_carbon_dioxide(id) - removed_carbon_dioxide_quantized);
+        self.set_carbon_dioxide(
+            id,
+            self.get_carbon_dioxide(id) - removed_carbon_dioxide_quantized,
+        );
         self.set_toxins(id, self.get_toxins(id) - removed_toxins_quantized);
-        self.set_sleeping_agent(id, self.get_sleeping_agent(id) - removed_sleeping_agent_quantized);
+        self.set_sleeping_agent(
+            id,
+            self.get_sleeping_agent(id) - removed_sleeping_agent_quantized,
+        );
         self.set_agent_b(id, self.get_agent_b(id) - removed_agent_b_quantized);
     }
 
-    #[rustfmt::skip]
-    #[inline(always)]
-    pub  unsafe fn remove_ratio(&mut self, id: usize, removed_id: usize, mut ratio: f32) {
+    #[cfg_attr(feature = "profile", inline(never))]
+    #[cfg_attr(not(feature = "profile"), inline(always))]
+    pub unsafe fn remove_ratio(&mut self, id: usize, removed_id: usize, mut ratio: f32) {
         profile!("remove_ratio");
 
         // FIXME: Change this place of code. We can internally affect on the instance of `gas_mixture`.
@@ -452,8 +449,6 @@ impl Mixture {
 
     #[inline(always)]
     pub unsafe fn copy_from(&mut self, id: usize, sample_id: usize) {
-        profile!("copy_from");
-
         self.set_oxygen(id, self.get_oxygen(sample_id));
         self.set_carbon_dioxide(id, self.get_carbon_dioxide(sample_id));
         self.set_nitrogen(id, self.get_nitrogen(sample_id));
@@ -463,9 +458,9 @@ impl Mixture {
         self.set_temperature(id, self.get_temperature(sample_id));
     }
 
-    // TODO: Make a method looks much more minimalistic.
-    #[allow(clippy::too_many_arguments)]
-    #[inline(always)]
+    #[must_use]
+    #[cfg_attr(feature = "profile", inline(never))]
+    #[cfg_attr(not(feature = "profile"), inline(always))]
     pub unsafe fn check_turf(
         &self,
         id: usize,
@@ -515,9 +510,9 @@ impl Mixture {
         true
     }
 
-    // TODO: Make a method looks much more minimalistic.
-    #[allow(clippy::too_many_arguments)]
-    #[inline(always)]
+    #[must_use]
+    #[cfg_attr(feature = "profile", inline(never))]
+    #[cfg_attr(not(feature = "profile"), inline(always))]
     pub unsafe fn check_turf_total(&self, id: usize, turf_model: Turf) -> bool {
         profile!("check_turf_total");
 
@@ -557,8 +552,9 @@ impl Mixture {
         true
     }
 
-    #[inline(always)]
     #[must_use]
+    #[cfg_attr(feature = "profile", inline(never))]
+    #[cfg_attr(not(feature = "profile"), inline(always))]
     pub unsafe fn share(&mut self, id: usize, sharer_id: usize, atmos_adjacent_turfs: f32) -> f32 {
         profile!("share");
 
@@ -760,7 +756,8 @@ impl Mixture {
         }
     }
 
-    #[inline(always)]
+    #[cfg_attr(feature = "profile", inline(never))]
+    #[cfg_attr(not(feature = "profile"), inline(always))]
     pub unsafe fn temperature_share(
         &mut self,
         id: usize,
@@ -794,8 +791,9 @@ impl Mixture {
         }
     }
 
-    #[inline(always)]
     #[must_use]
+    #[cfg_attr(feature = "profile", inline(never))]
+    #[cfg_attr(not(feature = "profile"), inline(always))]
     pub unsafe fn mimic(
         &mut self,
         id: usize,
@@ -918,7 +916,8 @@ impl Mixture {
         }
     }
 
-    #[inline(always)]
+    #[cfg_attr(feature = "profile", inline(never))]
+    #[cfg_attr(not(feature = "profile"), inline(always))]
     pub unsafe fn temperature_mimic(
         &mut self,
         id: usize,
@@ -947,7 +946,8 @@ impl Mixture {
         }
     }
 
-    #[inline(always)]
+    #[cfg_attr(feature = "profile", inline(never))]
+    #[cfg_attr(not(feature = "profile"), inline(always))]
     pub unsafe fn temperature_turf_share(
         &mut self,
         id: usize,
@@ -990,8 +990,9 @@ impl Mixture {
         }
     }
 
-    #[inline(always)]
     #[must_use]
+    #[cfg_attr(feature = "profile", inline(never))]
+    #[cfg_attr(not(feature = "profile"), inline(always))]
     pub unsafe fn compare(&self, id: usize, sample_id: usize) -> bool {
         profile!("compare");
 
@@ -1042,28 +1043,24 @@ impl Mixture {
         true
     }
 
-    #[inline(always)]
     #[must_use]
+    #[inline(always)]
     fn compare_condition(self_value: f32, sample_value: f32) -> bool {
         ((self_value - sample_value).abs() > MINIMUM_AIR_TO_SUSPEND)
             && ((self_value < (1.0 - MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_value)
                 || (self_value > (1.0 + MINIMUM_AIR_RATIO_TO_SUSPEND) * sample_value))
     }
 
-    #[inline(always)]
     #[must_use]
+    #[inline(always)]
     pub unsafe fn get_breath_partial_pressure(&self, id: usize, gas_pressure: f32) -> f32 {
-        profile!("get_breath_partial_pressure");
-
         (gas_pressure * R_IDEAL_GAS_EQUATION * self.get_temperature(id)) / BREATH_VOLUME
     }
 
-    //Reverse of the above
-    #[inline(always)]
+    // Reverse of the above
     #[must_use]
+    #[inline(always)]
     pub unsafe fn get_true_breath_pressure(&self, id: usize, breath_pp: f32) -> f32 {
-        profile!("get_true_breath_pressure");
-
         (breath_pp * BREATH_VOLUME) / (R_IDEAL_GAS_EQUATION * self.get_temperature(id))
     }
 }
