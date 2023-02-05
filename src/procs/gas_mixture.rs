@@ -26,7 +26,7 @@ pub fn enable_tracy() {
 pub fn register() {
     profile_proc!("register");
 
-    unsafe { MIXTURES.register(src) };
+    unsafe { MIXTURES.register(id!(src)) };
 
     null!()
 }
@@ -35,7 +35,7 @@ pub fn register() {
 pub fn unregister() {
     profile_proc!("unregister");
 
-    unsafe { MIXTURES.unregister(src) };
+    unsafe { MIXTURES.unregister(id!(src)) };
 
     null!()
 }
