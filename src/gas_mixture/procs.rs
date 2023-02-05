@@ -51,11 +51,11 @@ impl Mixture {
     #[inline(always)]
     pub unsafe fn return_pressure(&self, id: usize) -> f32 {
         let volume = self.get_volume(id);
-        if volume > 0.0 {
+        if volume > Default::default() {
             return self.total_moles(id) * R_IDEAL_GAS_EQUATION * self.get_temperature(id) / volume;
         }
 
-        0.0
+        Default::default()
     }
 
     // I'm not sure that this thing was made by a person with good mental health in DM.
@@ -63,7 +63,7 @@ impl Mixture {
     #[must_use]
     #[inline(always)]
     pub unsafe fn return_volume(&self, id: usize) -> f32 {
-        self.get_volume(id).max(0.0)
+        self.get_volume(id).max(Default::default())
     }
 
     #[must_use]
@@ -78,7 +78,7 @@ impl Mixture {
     pub unsafe fn react(&mut self, id: usize) -> bool {
         profile!("react");
 
-        let mut reacting = false; //set to 1 if a notable reaction occured (used by pipe_network)
+        let mut reacting = Default::default(); //set to 1 if a notable reaction occured (used by pipe_network)
 
         let temperature = self.get_temperature(id);
         let agent_b = self.get_agent_b(id);
@@ -97,13 +97,10 @@ impl Mixture {
                 .min_by(|a, b| a.total_cmp(b))
                 .unwrap_unchecked();
 
-            self.set_carbon_dioxide(id, carbon_dioxide - reaction_rate);
-            self.set_oxygen(id, self.get_oxygen(id) + reaction_rate);
-            self.set_agent_b(id, agent_b - reaction_rate * 0.05);
-            self.set_temperature(
-                id,
-                temperature + (reaction_rate * 20_000.0) / self.heat_capacity(id),
-            );
+            self.sub_carbon_dioxide(id, reaction_rate);
+            self.add_oxygen(id, reaction_rate);
+            self.sub_agent_b(id, reaction_rate * 0.05);
+            self.add_temperature(id, reaction_rate * 20_000.0 / self.heat_capacity(id));
 
             reacting = true;
         }
@@ -143,6 +140,7 @@ impl Mixture {
 
                 let toxins = self.get_toxins(id);
                 let oxygen = self.get_oxygen(id);
+
                 if oxygen > toxins * PLASMA_OXYGEN_FULLBURN {
                     plasma_burn_rate = (toxins * temperature_scale) / PLASMA_BURN_RATE_DELTA;
                 } else {
@@ -151,21 +149,17 @@ impl Mixture {
                 }
 
                 if plasma_burn_rate > MINIMUM_HEAT_CAPACITY {
-                    self.set_toxins(id, toxins - plasma_burn_rate);
-                    self.set_oxygen(id, oxygen - plasma_burn_rate * oxygen_burn_rate);
-                    self.set_carbon_dioxide(id, self.get_carbon_dioxide(id) + plasma_burn_rate);
+                    self.sub_toxins(id, plasma_burn_rate);
+                    self.sub_oxygen(id, plasma_burn_rate * oxygen_burn_rate);
+                    self.add_carbon_dioxide(id, plasma_burn_rate);
+                    self.add_fuel_burnt(id, plasma_burn_rate * (oxygen_burn_rate + 1.0));
 
                     energy_released += FIRE_PLASMA_ENERGY_RELEASED * plasma_burn_rate;
-
-                    self.set_fuel_burnt(
-                        id,
-                        self.get_fuel_burnt(id) + plasma_burn_rate * (1.0 + oxygen_burn_rate),
-                    );
                 }
             }
         }
 
-        if energy_released > 0.0 {
+        if energy_released > Default::default() {
             let new_heat_capacity = self.heat_capacity(id);
 
             if new_heat_capacity > MINIMUM_HEAT_CAPACITY {
@@ -198,7 +192,7 @@ impl Mixture {
         profile!("merge");
 
         if !self.get_is_initialized(giver_id) {
-            return false;
+            return Default::default();
         }
 
         if (self.get_temperature(id) - self.get_temperature(giver_id)).abs()
@@ -206,7 +200,7 @@ impl Mixture {
         {
             let self_heat_capacity = self.heat_capacity(id);
             let giver_heat_capacity = self.heat_capacity(giver_id);
-            let combined_heat_capacity = giver_heat_capacity + self_heat_capacity;
+            let combined_heat_capacity = self_heat_capacity + giver_heat_capacity;
             if combined_heat_capacity != 0.0 {
                 self.set_temperature(
                     id,
@@ -217,18 +211,12 @@ impl Mixture {
             }
         }
 
-        self.set_oxygen(id, self.get_oxygen(id) + self.get_oxygen(giver_id));
-        self.set_carbon_dioxide(
-            id,
-            self.get_carbon_dioxide(id) + self.get_carbon_dioxide(giver_id),
-        );
-        self.set_nitrogen(id, self.get_nitrogen(id) + self.get_nitrogen(giver_id));
-        self.set_toxins(id, self.get_toxins(id) + self.get_toxins(giver_id));
-        self.set_sleeping_agent(
-            id,
-            self.get_sleeping_agent(id) + self.get_sleeping_agent(giver_id),
-        );
-        self.set_agent_b(id, self.get_agent_b(id) + self.get_agent_b(giver_id));
+        self.add_oxygen(id, self.get_oxygen(giver_id));
+        self.add_carbon_dioxide(id, self.get_carbon_dioxide(giver_id));
+        self.add_nitrogen(id, self.get_nitrogen(giver_id));
+        self.add_toxins(id, self.get_toxins(giver_id));
+        self.add_sleeping_agent(id, self.get_sleeping_agent(giver_id));
+        self.add_agent_b(id, self.get_agent_b(giver_id));
 
         true
     }
@@ -525,29 +513,23 @@ impl Mixture {
             old_sharer_heat_capacity = self.heat_capacity(sharer_id);
         }
 
-        self.set_oxygen(id, self.get_oxygen(id) - delta_oxygen);
-        self.set_oxygen(sharer_id, self.get_oxygen(sharer_id) + delta_oxygen);
+        self.sub_oxygen(id, delta_oxygen);
+        self.add_oxygen(sharer_id, delta_oxygen);
 
-        self.set_carbon_dioxide(id, self.get_carbon_dioxide(id) - delta_carbon_dioxide);
-        self.set_carbon_dioxide(
-            sharer_id,
-            self.get_carbon_dioxide(sharer_id) + delta_carbon_dioxide,
-        );
+        self.sub_carbon_dioxide(id, delta_carbon_dioxide);
+        self.add_carbon_dioxide(sharer_id, delta_carbon_dioxide);
 
-        self.set_nitrogen(id, self.get_nitrogen(id) - delta_nitrogen);
-        self.set_nitrogen(sharer_id, self.get_nitrogen(sharer_id) + delta_nitrogen);
+        self.sub_nitrogen(id, delta_nitrogen);
+        self.add_nitrogen(sharer_id, delta_nitrogen);
 
-        self.set_toxins(id, self.get_toxins(id) - delta_toxins);
-        self.set_toxins(sharer_id, self.get_toxins(sharer_id) + delta_toxins);
+        self.sub_toxins(id, delta_toxins);
+        self.add_toxins(sharer_id, delta_toxins);
 
-        self.set_sleeping_agent(id, self.get_sleeping_agent(id) - delta_sleeping_agent);
-        self.set_sleeping_agent(
-            sharer_id,
-            self.get_sleeping_agent(sharer_id) + delta_sleeping_agent,
-        );
+        self.sub_sleeping_agent(id, delta_sleeping_agent);
+        self.add_sleeping_agent(sharer_id, delta_sleeping_agent);
 
-        self.set_agent_b(id, self.get_agent_b(id) - delta_agent_b);
-        self.set_agent_b(sharer_id, self.get_agent_b(sharer_id) + delta_agent_b);
+        self.sub_agent_b(id, delta_agent_b);
+        self.add_agent_b(sharer_id, delta_agent_b);
 
         let moved_moles = delta_oxygen
             + delta_carbon_dioxide
@@ -644,11 +626,8 @@ impl Mixture {
                     * (self_heat_capacity * sharer_heat_capacity
                         / (self_heat_capacity + sharer_heat_capacity));
 
-                self.set_temperature(id, self.get_temperature(id) - heat / self_heat_capacity);
-                self.set_temperature(
-                    sharer_id,
-                    self.get_temperature(sharer_id) + heat / sharer_heat_capacity,
-                );
+                self.sub_temperature(id, heat / self_heat_capacity);
+                self.add_temperature(sharer_id, heat / sharer_heat_capacity);
             }
         }
     }
@@ -718,12 +697,12 @@ impl Mixture {
             old_self_heat_capacity = self.heat_capacity(id);
         }
 
-        self.set_oxygen(id, self.get_oxygen(id) - delta_oxygen);
-        self.set_carbon_dioxide(id, self.get_carbon_dioxide(id) - delta_carbon_dioxide);
-        self.set_nitrogen(id, self.get_nitrogen(id) - delta_nitrogen);
-        self.set_toxins(id, self.get_toxins(id) - delta_toxins);
-        self.set_sleeping_agent(id, self.get_sleeping_agent(id) - delta_sleeping_agent);
-        self.set_agent_b(id, self.get_agent_b(id) - delta_agent_b);
+        self.sub_oxygen(id, delta_oxygen);
+        self.sub_carbon_dioxide(id, delta_carbon_dioxide);
+        self.sub_nitrogen(id, delta_nitrogen);
+        self.sub_toxins(id, delta_toxins);
+        self.sub_sleeping_agent(id, delta_sleeping_agent);
+        self.sub_agent_b(id, delta_agent_b);
 
         let moved_moles = delta_oxygen
             + delta_carbon_dioxide
@@ -842,7 +821,7 @@ impl Mixture {
                     * (self_heat_capacity * turf_sharer_heat_capacity
                         / (self_heat_capacity + turf_sharer_heat_capacity));
 
-                self.set_temperature(id, self.get_temperature(id) - heat / self_heat_capacity);
+                self.sub_temperature(id, heat / self_heat_capacity);
                 turf_sharer
                     .set(
                         temperature_name,

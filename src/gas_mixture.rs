@@ -1,6 +1,8 @@
+mod adds;
 mod getters;
 mod procs;
 mod setters;
+mod subs;
 
 use crate::constants::*;
 
