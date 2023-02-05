@@ -135,7 +135,7 @@ impl Mixture {
                     / (PLASMA_UPPER_TEMPERATURE - PLASMA_MINIMUM_BURN_TEMPERATURE)
             };
 
-            if temperature_scale > 0.0 {
+            if temperature_scale > Default::default() {
                 oxygen_burn_rate = OXYGEN_BURN_RATE_BASE - temperature_scale;
 
                 let toxins = self.get_toxins(id);
@@ -229,25 +229,18 @@ impl Mixture {
         let sum = self.total_moles(id);
         amount = amount.min(sum); // Can not take more air than tile has!
 
-        if amount <= 0.0 {
+        if amount <= Default::default() {
             self.unregister(removed_id);
 
             return;
         }
 
-        let oxygen = self.get_oxygen(id);
-        let nitrogen = self.get_nitrogen(id);
-        let carbon_dioxide = self.get_carbon_dioxide(id);
-        let toxins = self.get_toxins(id);
-        let sleeping_agent = self.get_sleeping_agent(id);
-        let agent_b = self.get_agent_b(id);
-
-        let removed_oxygen_quantized = quantize(oxygen / sum * amount);
-        let removed_nitrogen_quantized = quantize(nitrogen / sum * amount);
-        let removed_carbon_dioxide_quantized = quantize(carbon_dioxide / sum * amount);
-        let removed_toxins_quantized = quantize(toxins / sum * amount);
-        let removed_sleeping_agent_quantized = quantize(sleeping_agent / sum * amount);
-        let removed_agent_b_quantized = quantize(agent_b / sum * amount);
+        let removed_oxygen_quantized = quantize(self.get_oxygen(id) / sum * amount);
+        let removed_nitrogen_quantized = quantize(self.get_nitrogen(id) / sum * amount);
+        let removed_carbon_dioxide_quantized = quantize(self.get_carbon_dioxide(id) / sum * amount);
+        let removed_toxins_quantized = quantize(self.get_toxins(id) / sum * amount);
+        let removed_sleeping_agent_quantized = quantize(self.get_sleeping_agent(id) / sum * amount);
+        let removed_agent_b_quantized = quantize(self.get_agent_b(id) / sum * amount);
 
         self.set_oxygen(removed_id, removed_oxygen_quantized);
         self.set_nitrogen(removed_id, removed_nitrogen_quantized);
@@ -257,12 +250,12 @@ impl Mixture {
         self.set_agent_b(removed_id, removed_agent_b_quantized);
         self.set_temperature(removed_id, self.get_temperature(id));
 
-        self.set_oxygen(id, oxygen - removed_oxygen_quantized);
-        self.set_nitrogen(id, nitrogen - removed_nitrogen_quantized);
-        self.set_carbon_dioxide(id, carbon_dioxide - removed_carbon_dioxide_quantized);
-        self.set_toxins(id, toxins - removed_toxins_quantized);
-        self.set_sleeping_agent(id, sleeping_agent - removed_sleeping_agent_quantized);
-        self.set_agent_b(id, agent_b - removed_agent_b_quantized);
+        self.sub_oxygen(id, removed_oxygen_quantized);
+        self.sub_nitrogen(id, removed_nitrogen_quantized);
+        self.sub_carbon_dioxide(id, removed_carbon_dioxide_quantized);
+        self.sub_toxins(id, removed_toxins_quantized);
+        self.sub_sleeping_agent(id, removed_sleeping_agent_quantized);
+        self.sub_agent_b(id, removed_agent_b_quantized);
     }
 
     #[cfg_attr(feature = "profile", inline(never))]
@@ -278,19 +271,12 @@ impl Mixture {
 
         ratio = ratio.min(1.0);
 
-        let oxygen = self.get_oxygen(id);
-        let nitrogen = self.get_nitrogen(id);
-        let carbon_dioxide = self.get_carbon_dioxide(id);
-        let toxins = self.get_toxins(id);
-        let sleeping_agent = self.get_sleeping_agent(id);
-        let agent_b = self.get_agent_b(id);
-
-        let removed_oxygen_quantized = quantize(oxygen * ratio);
-        let removed_nitrogen_quantized = quantize(nitrogen * ratio);
-        let removed_carbon_dioxide_quantized = quantize(carbon_dioxide * ratio);
-        let removed_toxins_quantized = quantize(toxins * ratio);
-        let removed_sleeping_agent_quantized = quantize(sleeping_agent * ratio);
-        let removed_agent_b_quantized = quantize(agent_b * ratio);
+        let removed_oxygen_quantized = quantize(self.get_oxygen(id) * ratio);
+        let removed_nitrogen_quantized = quantize(self.get_nitrogen(id) * ratio);
+        let removed_carbon_dioxide_quantized = quantize(self.get_carbon_dioxide(id) * ratio);
+        let removed_toxins_quantized = quantize(self.get_toxins(id) * ratio);
+        let removed_sleeping_agent_quantized = quantize(self.get_sleeping_agent(id) * ratio);
+        let removed_agent_b_quantized = quantize(self.get_agent_b(id) * ratio);
 
         self.set_oxygen(removed_id, removed_oxygen_quantized);
         self.set_nitrogen(removed_id, removed_nitrogen_quantized);
@@ -300,12 +286,12 @@ impl Mixture {
         self.set_agent_b(removed_id, removed_agent_b_quantized);
         self.set_temperature(removed_id, self.get_temperature(id));
 
-        self.set_oxygen(id, oxygen - removed_oxygen_quantized);
-        self.set_nitrogen(id, nitrogen - removed_nitrogen_quantized);
-        self.set_carbon_dioxide(id, carbon_dioxide - removed_carbon_dioxide_quantized);
-        self.set_toxins(id, toxins - removed_toxins_quantized);
-        self.set_sleeping_agent(id, sleeping_agent - removed_sleeping_agent_quantized);
-        self.set_agent_b(id, agent_b - removed_agent_b_quantized);
+        self.sub_oxygen(id, removed_oxygen_quantized);
+        self.sub_nitrogen(id, removed_nitrogen_quantized);
+        self.sub_carbon_dioxide(id, removed_carbon_dioxide_quantized);
+        self.sub_toxins(id, removed_toxins_quantized);
+        self.sub_sleeping_agent(id, removed_sleeping_agent_quantized);
+        self.sub_agent_b(id, removed_agent_b_quantized);
     }
 
     #[inline(always)]
@@ -409,7 +395,7 @@ impl Mixture {
         profile!("share");
 
         if !self.get_is_initialized(sharer_id) {
-            return 0.0;
+            return Default::default();
         }
 
         let oxygen_archived = self.get_oxygen_archived(id);
@@ -436,7 +422,7 @@ impl Mixture {
             && agent_b_archived == sharer_agent_b_archived
             && temperature_archived == sharer_temperature_archived
         {
-            return 0.0;
+            return Default::default();
         }
 
         atmos_adjacent_turfs += 1.0;
@@ -464,45 +450,45 @@ impl Mixture {
 
         if delta_temperature.abs() > MINIMUM_TEMPERATURE_DELTA_TO_CONSIDER {
             let delta_air = delta_oxygen + delta_nitrogen;
-            if delta_air != 0.0 {
+            if delta_air != Default::default() {
                 let air_heat_capacity = SPECIFIC_HEAT_AIR * delta_air;
-                if delta_air > 0.0 {
+                if delta_air > Default::default() {
                     heat_capacity_self_to_sharer += air_heat_capacity;
                 } else {
                     heat_capacity_sharer_to_self -= air_heat_capacity;
                 }
             }
 
-            if delta_carbon_dioxide != 0.0 {
+            if delta_carbon_dioxide != Default::default() {
                 let carbon_dioxide_heat_capacity = SPECIFIC_HEAT_CDO * delta_carbon_dioxide;
-                if delta_carbon_dioxide > 0.0 {
+                if delta_carbon_dioxide > Default::default() {
                     heat_capacity_self_to_sharer += carbon_dioxide_heat_capacity;
                 } else {
                     heat_capacity_sharer_to_self -= carbon_dioxide_heat_capacity;
                 }
             }
 
-            if delta_toxins != 0.0 {
+            if delta_toxins != Default::default() {
                 let toxins_heat_capacity = SPECIFIC_HEAT_TOXIN * delta_toxins;
-                if delta_toxins > 0.0 {
+                if delta_toxins > Default::default() {
                     heat_capacity_self_to_sharer += toxins_heat_capacity;
                 } else {
                     heat_capacity_sharer_to_self -= toxins_heat_capacity;
                 }
             }
 
-            if delta_sleeping_agent != 0.0 {
+            if delta_sleeping_agent != Default::default() {
                 let sleeping_agent_heat_capacity = SPECIFIC_HEAT_N2O * delta_sleeping_agent;
-                if delta_sleeping_agent > 0.0 {
+                if delta_sleeping_agent > Default::default() {
                     heat_capacity_self_to_sharer += sleeping_agent_heat_capacity;
                 } else {
                     heat_capacity_sharer_to_self -= sleeping_agent_heat_capacity;
                 }
             }
 
-            if delta_agent_b != 0.0 {
+            if delta_agent_b != Default::default() {
                 let agent_b_heat_capacity = SPECIFIC_HEAT_AGENT_B * delta_agent_b;
-                if delta_agent_b > 0.0 {
+                if delta_agent_b > Default::default() {
                     heat_capacity_self_to_sharer += agent_b_heat_capacity;
                 } else {
                     heat_capacity_sharer_to_self -= agent_b_heat_capacity;
@@ -596,7 +582,7 @@ impl Mixture {
 
             delta_pressure * R_IDEAL_GAS_EQUATION / self.get_volume(id)
         } else {
-            0.0
+            Default::default()
         }
     }
 
@@ -664,32 +650,32 @@ impl Mixture {
             quantize(self.get_agent_b_archived(id) - turf_model.agent_b) / atmos_adjacent_turfs;
         let delta_temperature = temperature_archived - turf_model.temperature;
 
-        let mut old_self_heat_capacity = 0.0;
-        let mut heat_capacity_transferred = 0.0;
+        let mut old_self_heat_capacity = Default::default();
+        let mut heat_capacity_transferred: f32 = Default::default();
 
         if delta_temperature.abs() > MINIMUM_TEMPERATURE_DELTA_TO_CONSIDER {
             let delta_air = delta_oxygen + delta_nitrogen;
-            if delta_air != 0.0 {
+            if delta_air != Default::default() {
                 let air_heat_capacity = SPECIFIC_HEAT_AIR * delta_air;
                 heat_capacity_transferred -= air_heat_capacity;
             }
 
-            if delta_carbon_dioxide != 0.0 {
+            if delta_carbon_dioxide != Default::default() {
                 let carbon_dioxide_heat_capacity = SPECIFIC_HEAT_CDO * delta_carbon_dioxide;
                 heat_capacity_transferred -= carbon_dioxide_heat_capacity;
             }
 
-            if delta_toxins != 0.0 {
+            if delta_toxins != Default::default() {
                 let toxins_heat_capacity = SPECIFIC_HEAT_TOXIN * delta_toxins;
                 heat_capacity_transferred -= toxins_heat_capacity;
             }
 
-            if delta_sleeping_agent != 0.0 {
+            if delta_sleeping_agent != Default::default() {
                 let sleeping_agent_heat_capacity = SPECIFIC_HEAT_N2O * delta_sleeping_agent;
                 heat_capacity_transferred -= sleeping_agent_heat_capacity;
             }
 
-            if delta_agent_b != 0.0 {
+            if delta_agent_b != Default::default() {
                 let agent_b_heat_capacity = SPECIFIC_HEAT_AGENT_B * delta_agent_b;
                 heat_capacity_transferred -= agent_b_heat_capacity;
             }
@@ -754,7 +740,7 @@ impl Mixture {
 
             delta_pressure * R_IDEAL_GAS_EQUATION / self.get_volume(id)
         } else {
-            0.0
+            Default::default()
         }
     }
 
@@ -783,7 +769,7 @@ impl Mixture {
                     * (self_heat_capacity * model_heat_capacity
                         / (self_heat_capacity + model_heat_capacity));
 
-                self.set_temperature(id, temperature - heat / self_heat_capacity);
+                self.sub_temperature(id, heat / self_heat_capacity);
             }
         }
     }
@@ -841,37 +827,37 @@ impl Mixture {
         let oxygen = self.get_oxygen(id);
         let sample_oxygen = self.get_oxygen(sample_id);
         if Self::compare_condition(oxygen, sample_oxygen) {
-            return false;
+            return Default::default();
         }
 
         let nitrogen = self.get_nitrogen(id);
         let sample_nitrogen = self.get_nitrogen(sample_id);
         if Self::compare_condition(nitrogen, sample_nitrogen) {
-            return false;
+            return Default::default();
         }
 
         let carbon_dioxide = self.get_carbon_dioxide(id);
         let sample_carbon_dioxide = self.get_carbon_dioxide(sample_id);
         if Self::compare_condition(carbon_dioxide, sample_carbon_dioxide) {
-            return false;
+            return Default::default();
         }
 
         let toxins = self.get_toxins(id);
         let sample_toxins = self.get_toxins(sample_id);
         if Self::compare_condition(toxins, sample_toxins) {
-            return false;
+            return Default::default();
         }
 
         let sleeping_agent = self.get_sleeping_agent(id);
         let sample_sleeping_agent = self.get_sleeping_agent(sample_id);
         if Self::compare_condition(sleeping_agent, sample_sleeping_agent) {
-            return false;
+            return Default::default();
         }
 
         let agent_b = self.get_agent_b(id);
         let sample_agent_b = self.get_agent_b(sample_id);
         if Self::compare_condition(agent_b, sample_agent_b) {
-            return false;
+            return Default::default();
         }
 
         let temperature = self.get_temperature(id);
@@ -879,7 +865,7 @@ impl Mixture {
         if self.total_moles(id) > MINIMUM_AIR_TO_SUSPEND
             && Self::compare_condition(temperature, sample_temperature)
         {
-            return false;
+            return Default::default();
         }
 
         true
