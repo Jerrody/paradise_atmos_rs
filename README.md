@@ -13,6 +13,6 @@ In comparison with others implementations of atmos in Rust, this implementation 
 I need only to index an array of `oxygen`s and take an `oxygen` of `gas_mixture` by it's id that is internal id in BYOND game instance. As the result, this is ops are very fast and should be very cheap to operate with data per server's tick.
 
 # Features
-`profile`- this is an optional feature that enabled visual profiling via `Tracy`, you will start see execution time of methods that was migrated to Rust like `fire` proc from DM in profiler.
+`profile`- this is an optional feature that enables visual profiling via `Tracy`, you will start see execution time of methods that was migrated to Rust like `fire` proc from DM in profiler.
 
-`profile-proc` - this is an optional feature that enabled visual profiling via `Tracy`, you will start see whole execution time from the hook to return from the hook.
+`profile-proc` - this is an optional feature that enables visual profiling via `Tracy`, you will start see whole execution time from the hook to return from the hook.
