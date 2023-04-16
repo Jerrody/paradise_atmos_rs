@@ -9,7 +9,7 @@ Currently, implemented only logic of `gas_mixture`, but in ideal world this shou
 
 # Implementation 
 In comparison with others implementations of atmos in Rust, this implementation uses technique of SOA - Struct of Array. This means, that for to get `oxygen` field of `gas_mixture` I don't need to load to the CPU memory whole 68 bytes,
-I need only to index an array of `oxygen`'s and take an `oxygen` of `gas_mixture` by it's id that is internal id in BYOND game instance. As the result, this is ops are very fast and should be very cheap to operate with data per server's tick.
+I need only to index an array of `oxygen`s and take an `oxygen` of `gas_mixture` by it's id that is internal id in BYOND game instance. As the result, this is ops are very fast and should be very cheap to operate with data per server's tick.
 
 # Features
 `profile`- this is an optional feature that enabled visual profiling via `Tracy`, you will start see execution time of methods that was migrated to Rust like `fire` proc from DM in profiler.
