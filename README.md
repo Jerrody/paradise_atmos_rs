@@ -15,4 +15,4 @@ I need only to index an array of `oxygen`s and take an `oxygen` of `gas_mixture`
 # Features
 `profile`- this is an optional feature that enables visual profiling via `Tracy`, you will start see execution time of methods that was migrated to Rust like `fire` proc from DM in profiler.
 
-`profile-proc` - this is an optional feature that enables visual profiling via `Tracy`, you will start see whole execution time from the hook to return from the hook.
+`profile-proc` - this is an optional feature that enables visual profiling via `Tracy`, you will start see whole execution time from the beginning hook to return from the hook.
