@@ -1,7 +1,7 @@
 # paradise_atmos_rs
 An experimental Atmospherics implementation in Rust.
 
-For the base of this code was taken project [Paradise SS220](https://github.com/ss220-space/Paradise).
+For the base of this code was taken code base of project: [Paradise SS220](https://github.com/ss220-space/Paradise).
 
 # Current Status
 Currently, implemented only logic of `gas_mixture`, but in ideal world this should be enough for to gain performance boost per server tick. Also, for the full migrating `gas_mixture` to the Rust code I did interop with `turf` that is still placed in DM code base.
