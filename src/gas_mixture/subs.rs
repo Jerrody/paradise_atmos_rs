@@ -1,38 +1,24 @@
 use super::Mixture;
 
-impl Mixture {
-    #[inline(always)]
-    pub unsafe fn sub_oxygen(&mut self, id: usize, value: f32) {
-        *self.oxygen.get_unchecked_mut(id) -= value;
+macro_rules! sub_methods {
+    ($($method:ident, $field:ident);+ $(;)?) => {
+        impl Mixture {
+            $(
+                #[inline(always)]
+                pub unsafe fn $method(&mut self, id: usize, value: f32) {
+                    *self.$field.get_unchecked_mut(id) -= value;
+                }
+            )+
+        }
     }
+}
 
-    #[inline(always)]
-    pub unsafe fn sub_carbon_dioxide(&mut self, id: usize, value: f32) {
-        *self.carbon_dioxide.get_unchecked_mut(id) -= value;
-    }
-
-    #[inline(always)]
-    pub unsafe fn sub_nitrogen(&mut self, id: usize, value: f32) {
-        *self.nitrogen.get_unchecked_mut(id) -= value;
-    }
-
-    #[inline(always)]
-    pub unsafe fn sub_toxins(&mut self, id: usize, value: f32) {
-        *self.toxins.get_unchecked_mut(id) -= value;
-    }
-
-    #[inline(always)]
-    pub unsafe fn sub_sleeping_agent(&mut self, id: usize, value: f32) {
-        *self.sleeping_agent.get_unchecked_mut(id) -= value;
-    }
-
-    #[inline(always)]
-    pub unsafe fn sub_agent_b(&mut self, id: usize, value: f32) {
-        *self.agent_b.get_unchecked_mut(id) -= value;
-    }
-
-    #[inline(always)]
-    pub unsafe fn sub_temperature(&mut self, id: usize, value: f32) {
-        *self.temperature.get_unchecked_mut(id) -= value;
-    }
+sub_methods! {
+    sub_oxygen, oxygen;
+    sub_carbon_dioxide, carbon_dioxide;
+    sub_nitrogen, nitrogen;
+    sub_toxins, toxins;
+    sub_sleeping_agent, sleeping_agent;
+    sub_agent_b, agent_b;
+    sub_temperature, temperature;
 }

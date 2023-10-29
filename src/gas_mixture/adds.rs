@@ -1,43 +1,25 @@
 use super::Mixture;
 
-impl Mixture {
-    #[inline(always)]
-    pub unsafe fn add_oxygen(&mut self, id: usize, value: f32) {
-        *self.oxygen.get_unchecked_mut(id) += value;
+macro_rules! add_methods {
+    ($($method:ident, $field:ident);+ $(;)?) => {
+        impl Mixture {
+            $(
+                #[inline(always)]
+                pub unsafe fn $method(&mut self, id: usize, value: f32) {
+                    *self.$field.get_unchecked_mut(id) += value;
+                }
+            )+
+        }
     }
+}
 
-    #[inline(always)]
-    pub unsafe fn add_carbon_dioxide(&mut self, id: usize, value: f32) {
-        *self.carbon_dioxide.get_unchecked_mut(id) += value;
-    }
-
-    #[inline(always)]
-    pub unsafe fn add_nitrogen(&mut self, id: usize, value: f32) {
-        *self.nitrogen.get_unchecked_mut(id) += value;
-    }
-
-    #[inline(always)]
-    pub unsafe fn add_toxins(&mut self, id: usize, value: f32) {
-        *self.toxins.get_unchecked_mut(id) += value;
-    }
-
-    #[inline(always)]
-    pub unsafe fn add_sleeping_agent(&mut self, id: usize, value: f32) {
-        *self.sleeping_agent.get_unchecked_mut(id) += value;
-    }
-
-    #[inline(always)]
-    pub unsafe fn add_agent_b(&mut self, id: usize, value: f32) {
-        *self.agent_b.get_unchecked_mut(id) += value;
-    }
-
-    #[inline(always)]
-    pub unsafe fn add_temperature(&mut self, id: usize, value: f32) {
-        *self.temperature.get_unchecked_mut(id) += value;
-    }
-
-    #[inline(always)]
-    pub unsafe fn add_fuel_burnt(&mut self, id: usize, value: f32) {
-        *self.fuel_burnt.get_unchecked_mut(id) += value;
-    }
+add_methods! {
+    add_oxygen, oxygen;
+    add_carbon_dioxide, carbon_dioxide;
+    add_nitrogen, nitrogen;
+    add_toxins, toxins;
+    add_sleeping_agent, sleeping_agent;
+    add_agent_b, agent_b;
+    add_temperature, temperature;
+    add_fuel_burnt, fuel_burnt;
 }

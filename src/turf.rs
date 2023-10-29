@@ -13,13 +13,13 @@ pub struct Turf {
 }
 
 impl Turf {
-    const OXYGEN: &str = "oxygen";
-    const CARBON_DIOXIDE: &str = "carbon_dioxide";
-    const NITROGEN: &str = "nitrogen";
-    const TOXINS: &str = "toxins";
-    const SLEEPING_AGENT: &str = "sleeping_agent";
-    const AGENT_B: &str = "agent_b";
-    const TEMPERATURE: &str = "temperature";
+    const OXYGEN: &'static str = "oxygen";
+    const CARBON_DIOXIDE: &'static str = "carbon_dioxide";
+    const NITROGEN: &'static str = "nitrogen";
+    const TOXINS: &'static str = "toxins";
+    const SLEEPING_AGENT: &'static str = "sleeping_agent";
+    const AGENT_B: &'static str = "agent_b";
+    const TEMPERATURE: &'static str = "temperature";
 
     #[inline(always)]
     #[must_use]

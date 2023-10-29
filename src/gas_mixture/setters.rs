@@ -1,80 +1,34 @@
-impl super::Mixture {
-    #[inline(always)]
-    pub unsafe fn set_oxygen(&mut self, id: usize, value: f32) {
-        *self.oxygen.get_unchecked_mut(id) = value;
-    }
+use super::Mixture;
 
-    #[inline(always)]
-    pub unsafe fn set_carbon_dioxide(&mut self, id: usize, value: f32) {
-        *self.carbon_dioxide.get_unchecked_mut(id) = value;
+macro_rules! set_methods {
+    ($($method:ident, $field:ident);+ $(;)?) => {
+        impl Mixture {
+            $(
+                #[inline(always)]
+                pub unsafe fn $method(&mut self, id: usize, value: f32) {
+                    *self.$field.get_unchecked_mut(id) = value;
+                }
+            )+
+        }
     }
+}
 
-    #[inline(always)]
-    pub unsafe fn set_nitrogen(&mut self, id: usize, value: f32) {
-        *self.nitrogen.get_unchecked_mut(id) = value;
-    }
-
-    #[inline(always)]
-    pub unsafe fn set_toxins(&mut self, id: usize, value: f32) {
-        *self.toxins.get_unchecked_mut(id) = value;
-    }
-
-    #[inline(always)]
-    pub unsafe fn set_sleeping_agent(&mut self, id: usize, value: f32) {
-        *self.sleeping_agent.get_unchecked_mut(id) = value;
-    }
-
-    #[inline(always)]
-    pub unsafe fn set_agent_b(&mut self, id: usize, value: f32) {
-        *self.agent_b.get_unchecked_mut(id) = value;
-    }
-
-    #[inline(always)]
-    pub unsafe fn set_volume(&mut self, id: usize, value: f32) {
-        *self.volume.get_unchecked_mut(id) = value;
-    }
-
-    #[inline(always)]
-    pub unsafe fn set_temperature(&mut self, id: usize, value: f32) {
-        *self.temperature.get_unchecked_mut(id) = value;
-    }
-
-    #[inline(always)]
-    pub unsafe fn set_last_share(&mut self, id: usize, value: f32) {
-        *self.last_share.get_unchecked_mut(id) = value;
-    }
-
-    #[inline(always)]
-    pub unsafe fn set_fuel_burnt(&mut self, id: usize, value: f32) {
-        *self.fuel_burnt.get_unchecked_mut(id) = value;
-    }
-
-    #[inline(always)]
-    pub unsafe fn set_oxygen_archived(&mut self, id: usize, value: f32) {
-        *self.oxygen_archived.get_unchecked_mut(id) = value;
-    }
-    #[inline(always)]
-    pub unsafe fn set_carbon_dioxide_archived(&mut self, id: usize, value: f32) {
-        *self.carbon_dioxide_archived.get_unchecked_mut(id) = value;
-    }
-    #[inline(always)]
-    pub unsafe fn set_nitrogen_archived(&mut self, id: usize, value: f32) {
-        *self.nitrogen_archived.get_unchecked_mut(id) = value;
-    }
-    #[inline(always)]
-    pub unsafe fn set_toxins_archived(&mut self, id: usize, value: f32) {
-        *self.toxins_archived.get_unchecked_mut(id) = value;
-    }
-    #[inline(always)]
-    pub unsafe fn set_sleeping_agent_archived(&mut self, id: usize, value: f32) {
-        *self.sleeping_agent_archived.get_unchecked_mut(id) = value;
-    }
-    #[inline(always)]
-    pub unsafe fn set_agent_b_archived(&mut self, id: usize, value: f32) {
-        *self.agent_b_archived.get_unchecked_mut(id) = value;
-    }
-    #[inline(always)]
-    pub unsafe fn set_temperature_archived(&mut self, id: usize, value: f32) {
-        *self.temperature_archived.get_unchecked_mut(id) = value;
-    }
+set_methods! {
+    set_oxygen, oxygen;
+    set_carbon_dioxide, carbon_dioxide;
+    set_nitrogen, nitrogen;
+    set_toxins, toxins;
+    set_sleeping_agent, sleeping_agent;
+    set_agent_b, agent_b;
+    set_volume, volume;
+    set_temperature, temperature;
+    set_last_share, last_share;
+    set_fuel_burnt, fuel_burnt;
+    set_oxygen_archived, oxygen_archived;
+    set_carbon_dioxide_archived, carbon_dioxide_archived;
+    set_nitrogen_archived, nitrogen_archived;
+    set_toxins_archived, toxins_archived;
+    set_sleeping_agent_archived, sleeping_agent_archived;
+    set_agent_b_archived, agent_b_archived;
+    set_temperature_archived, temperature_archived;
 }
