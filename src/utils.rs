@@ -1,20 +1,11 @@
 use crate::constants::*;
 
 /// #### Description
-/// Creates a `BYOND`'s string.
-#[macro_export]
-macro_rules! string_ref {
-    ($s:expr) => {
-        StringRef::new($s).unwrap_unchecked()
-    };
-}
-
-/// #### Description
 /// Creates a `DM`'s `null` via [`auxtools::Value`] wrapped with [`Result::Ok`].
 #[macro_export]
 macro_rules! null {
     () => {
-        Ok(Value::null())
+        Ok(Default::default())
     };
 }
 
@@ -23,7 +14,7 @@ macro_rules! null {
 #[macro_export]
 macro_rules! value {
     ($value:expr) => {
-        Ok(Value::from($value))
+        Ok(ByondValue::from($value))
     };
 }
 
@@ -33,7 +24,7 @@ macro_rules! value {
 #[macro_export]
 macro_rules! id {
     ($value:expr) => {
-        $value.raw.data.id as usize
+        $value.0.data.ref_ as usize
     };
 }
 

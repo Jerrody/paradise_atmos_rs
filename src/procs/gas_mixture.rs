@@ -1,4 +1,5 @@
-use auxtools::*;
+use byondapi::byond_string;
+use byondapi::value::ByondValue;
 
 use crate::gas_mixture::MIXTURES;
 use crate::turf::Turf;
@@ -18,202 +19,200 @@ pub fn enable_tracy() {
             .with(tracing_tracy::TracyLayer::new()),
     )
     .expect("set up the subscriber");
-
-    null!()
 }
 
-#[hook("/datum/gas_mixture/proc/register")]
-pub fn register() {
+#[byondapi::bind("/datum/gas_mixture/proc/")]
+pub fn register(id: ByondValue) {
     profile_proc!("register");
 
-    unsafe { MIXTURES.register(id!(src)) };
+    unsafe { MIXTURES.register(id!(id)) };
 
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/unregister")]
-pub fn unregister() {
+#[byondapi::bind]
+pub fn unregister(id: ByondValue) {
     profile_proc!("unregister");
 
-    unsafe { MIXTURES.unregister(id!(src)) };
+    unsafe { MIXTURES.unregister(id!(id)) };
 
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/get_is_initialized")]
-pub fn get_is_initialized() {
+#[byondapi::bind]
+pub fn get_is_initialized(src: ByondValue) {
     profile_proc!("unregister");
 
     value!(unsafe { MIXTURES.get_is_initialized(id!(src)) })
 }
 
-#[hook("/datum/gas_mixture/proc/get_oxygen")]
-pub fn get_oxygen() {
+#[byondapi::bind]
+pub fn get_oxygen(src: ByondValue) {
     profile_proc!("get_oxygen");
 
     value!(unsafe { MIXTURES.get_oxygen(id!(src)) })
 }
 
-#[hook("/datum/gas_mixture/proc/get_carbon_dioxide")]
-pub fn get_carbon_dioxide() {
+#[byondapi::bind]
+pub fn get_carbon_dioxide(src: ByondValue) {
     profile_proc!("get_carbon_dioxide");
 
     value!(unsafe { MIXTURES.get_carbon_dioxide(id!(src)) })
 }
 
-#[hook("/datum/gas_mixture/proc/get_nitrogen")]
-pub fn get_nitrogen() {
+#[byondapi::bind]
+pub fn get_nitrogen(src: ByondValue) {
     profile_proc!("get_nitrogen");
 
     value!(unsafe { MIXTURES.get_nitrogen(id!(src)) })
 }
 
-#[hook("/datum/gas_mixture/proc/get_toxins")]
-pub fn get_toxins() {
+#[byondapi::bind]
+pub fn get_toxins(src: ByondValue) {
     profile_proc!("get_toxins");
 
     value!(unsafe { MIXTURES.get_toxins(id!(src)) })
 }
 
-#[hook("/datum/gas_mixture/proc/get_sleeping_agent")]
-pub fn get_sleeping_agent() {
+#[byondapi::bind]
+pub fn get_sleeping_agent(src: ByondValue) {
     profile_proc!("get_sleeping_agent");
 
     value!(unsafe { MIXTURES.get_sleeping_agent(id!(src)) })
 }
 
-#[hook("/datum/gas_mixture/proc/get_agent_b")]
-pub fn get_agent_b() {
+#[byondapi::bind]
+pub fn get_agent_b(src: ByondValue) {
     profile_proc!("get_agent_b");
 
     value!(unsafe { MIXTURES.get_agent_b(id!(src)) })
 }
 
-#[hook("/datum/gas_mixture/proc/get_volume")]
-pub fn get_volume() {
+#[byondapi::bind]
+pub fn get_volume(src: ByondValue) {
     profile_proc!("get_volume");
 
     value!(unsafe { MIXTURES.get_volume(id!(src)) })
 }
 
-#[hook("/datum/gas_mixture/proc/get_temperature")]
-pub fn get_temperature() {
+#[byondapi::bind]
+pub fn get_temperature(src: ByondValue) {
     profile_proc!("get_temperature");
 
     value!(unsafe { MIXTURES.get_temperature(id!(src)) })
 }
 
-#[hook("/datum/gas_mixture/proc/get_last_share")]
-pub fn get_last_share() {
+#[byondapi::bind]
+pub fn get_last_share(src: ByondValue) {
     profile_proc!("get_last_share");
 
     value!(unsafe { MIXTURES.get_last_share(id!(src)) })
 }
 
-#[hook("/datum/gas_mixture/proc/set_oxygen")]
-pub fn set_oxygen(value: &Value) {
+#[byondapi::bind]
+pub fn set_oxygen(src: ByondValue) {
     profile_proc!("set_oxygen");
 
-    unsafe { MIXTURES.set_oxygen(id!(src), value.as_number().unwrap_unchecked()) }
+    unsafe { MIXTURES.set_oxygen(id!(src), src.get_number().unwrap_unchecked()) }
 
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/set_carbon_dioxide")]
-pub fn set_carbon_dioxide(value: &Value) {
+#[byondapi::bind]
+pub fn set_carbon_dioxide(src: ByondValue) {
     profile_proc!("set_carbon_dioxide");
 
-    unsafe { MIXTURES.set_carbon_dioxide(id!(src), value.as_number().unwrap_unchecked()) }
+    unsafe { MIXTURES.set_carbon_dioxide(id!(src), src.get_number().unwrap_unchecked()) }
 
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/set_nitrogen")]
-pub fn set_nitrogen(value: &Value) {
+#[byondapi::bind]
+pub fn set_nitrogen(src: ByondValue) {
     profile_proc!("set_nitrogen");
 
-    unsafe { MIXTURES.set_nitrogen(id!(src), value.as_number().unwrap_unchecked()) }
+    unsafe { MIXTURES.set_nitrogen(id!(src), src.get_number().unwrap_unchecked()) }
 
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/set_toxins")]
-pub fn set_toxins(value: &Value) {
+#[byondapi::bind]
+pub fn set_toxins(src: ByondValue) {
     profile_proc!("set_toxins");
 
-    unsafe { MIXTURES.set_toxins(id!(src), value.as_number().unwrap_unchecked()) }
+    unsafe { MIXTURES.set_toxins(id!(src), src.get_number().unwrap_unchecked()) }
 
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/set_sleeping_agent")]
-pub fn set_sleeping_agent(value: &Value) {
+#[byondapi::bind]
+pub fn set_sleeping_agent(src: ByondValue) {
     profile_proc!("set_sleeping_agent");
 
-    unsafe { MIXTURES.set_sleeping_agent(id!(src), value.as_number().unwrap_unchecked()) }
+    unsafe { MIXTURES.set_sleeping_agent(id!(src), src.get_number().unwrap_unchecked()) }
 
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/set_agent_b")]
-pub fn set_agent_b(value: &Value) {
+#[byondapi::bind]
+pub fn set_agent_b(src: ByondValue) {
     profile_proc!("set_agent_b");
 
-    unsafe { MIXTURES.set_agent_b(id!(src), value.as_number().unwrap_unchecked()) }
+    unsafe { MIXTURES.set_agent_b(id!(src), src.get_number().unwrap_unchecked()) }
 
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/set_volume")]
-pub fn set_volume(value: &Value) {
+#[byondapi::bind]
+pub fn set_volume(src: ByondValue) {
     profile_proc!("set_volume");
 
-    unsafe { MIXTURES.set_volume(id!(src), value.as_number().unwrap_unchecked()) }
+    unsafe { MIXTURES.set_volume(id!(src), src.get_number().unwrap_unchecked()) }
 
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/set_temperature")]
-pub fn set_temperature(value: &Value) {
+#[byondapi::bind]
+pub fn set_temperature(src: ByondValue) {
     profile_proc!("set_temperature");
 
-    unsafe { MIXTURES.set_temperature(id!(src), value.as_number().unwrap_unchecked()) }
+    unsafe { MIXTURES.set_temperature(id!(src), src.get_number().unwrap_unchecked()) }
 
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/set_last_share")]
-pub fn set_last_share(value: &Value) {
+#[byondapi::bind]
+pub fn set_last_share(src: ByondValue) {
     profile_proc!("set_last_share");
 
-    unsafe { MIXTURES.set_last_share(id!(src), value.as_number().unwrap_unchecked()) }
+    unsafe { MIXTURES.set_last_share(id!(src), src.get_number().unwrap_unchecked()) }
 
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/heat_capacity")]
-pub fn get_heat_capacity() {
+#[byondapi::bind]
+pub fn get_heat_capacity(src: ByondValue) {
     profile_proc!("get_heat_capacity");
 
     value!(unsafe { MIXTURES.heat_capacity(id!(src)) })
 }
 
-#[hook("/datum/gas_mixture/proc/total_moles")]
-pub fn get_total_moles() {
+#[byondapi::bind]
+pub fn get_total_moles(src: ByondValue) {
     profile_proc!("get_total_moles");
 
     value!(unsafe { MIXTURES.total_moles(id!(src)) })
 }
 
-#[hook("/datum/gas_mixture/proc/total_trace_moles")]
-pub fn get_total_trace_moles() {
+#[byondapi::bind]
+pub fn get_total_trace_moles(src: ByondValue) {
     profile_proc!("get_total_trace_moles");
 
     value!(unsafe { MIXTURES.get_total_trace_moles(id!(src)) })
 }
 
-#[hook("/datum/gas_mixture/proc/return_pressure")]
-pub fn get_pressure() {
+#[byondapi::bind]
+pub fn get_pressure(src: ByondValue) {
     profile_proc!("get_pressure");
 
     value!(unsafe { MIXTURES.return_pressure(id!(src)) })
@@ -221,29 +220,29 @@ pub fn get_pressure() {
 
 // I'm not sure that this thing was made by a person with good mental health in DM.
 // Anyway, it could cause, potentially, unexpected behavior.
-#[hook("/datum/gas_mixture/proc/return_volume")]
-pub fn return_volume() {
+#[byondapi::bind]
+pub fn return_volume(src: ByondValue) {
     profile_proc!("return_volume");
 
     value!(unsafe { MIXTURES.return_volume(id!(src)) })
 }
 
-#[hook("/datum/gas_mixture/proc/thermal_energy")]
-pub fn get_thermal_energy() {
+#[byondapi::bind]
+pub fn get_thermal_energy(src: ByondValue) {
     profile_proc!("get_thermal_energy");
 
     value!(unsafe { MIXTURES.thermal_energy(id!(src)) })
 }
 
-#[hook("/datum/gas_mixture/proc/react")]
-pub fn react() {
+#[byondapi::bind]
+pub fn react(src: ByondValue) {
     profile_proc!("react");
 
     value!(unsafe { MIXTURES.react(id!(src)) })
 }
 
-#[hook("/datum/gas_mixture/proc/archive")]
-pub fn archive() {
+#[byondapi::bind]
+pub fn archive(src: ByondValue) {
     profile_proc!("archive");
 
     unsafe { MIXTURES.archive(id!(src)) }
@@ -251,41 +250,41 @@ pub fn archive() {
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/merge")]
-pub fn merge(giver: &Value) {
+#[byondapi::bind]
+pub fn merge(src: ByondValue, giver: ByondValue) {
     profile_proc!("merge");
 
     value!(unsafe { MIXTURES.merge(id!(src), id!(giver)) })
 }
 
-#[hook("/datum/gas_mixture/proc/remove")]
-pub fn remove(removed: &Value, amount: &Value) {
+#[byondapi::bind]
+pub fn remove(src: ByondValue, removed: ByondValue, amount: ByondValue) {
     profile_proc!("remove");
 
     unsafe {
         MIXTURES.remove(
             id!(src),
             id!(removed),
-            amount.as_number().unwrap_unchecked(),
+            amount.get_number().unwrap_unchecked(),
         );
     }
 
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/remove_ratio")]
-pub fn remove_ratio(removed: u32, mut ratio: &Value) {
+#[byondapi::bind]
+pub fn remove_ratio(src: ByondValue, removed: ByondValue, ratio: ByondValue) {
     profile_proc!("remove_ratio");
 
     unsafe {
-        MIXTURES.remove_ratio(id!(src), id!(removed), ratio.as_number().unwrap_unchecked());
+        MIXTURES.remove_ratio(id!(src), id!(removed), ratio.get_number().unwrap_unchecked());
     }
 
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/copy_from")]
-pub fn copy_from(sample: &Value) {
+#[byondapi::bind]
+pub fn copy_from(src: ByondValue, sample: ByondValue) {
     profile_proc!("copy_from");
 
     unsafe {
@@ -295,22 +294,22 @@ pub fn copy_from(sample: &Value) {
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/check_turf")]
-pub fn check_turf(turf_model: &Value, atmos_adjacent_turfs: &Value) {
+#[byondapi::bind]
+pub fn check_turf(src: ByondValue, turf_model: ByondValue, atmos_adjacent_turfs: ByondValue) {
     profile_proc!("check_turf");
 
     let turf_model = unsafe { Turf::new(turf_model) };
     let atmos_adjacent_turfs = atmos_adjacent_turfs
-        .as_number()
+        .get_number()
         .unwrap_or(DEFAULT_ATMOS_ADJACENT_TURFS);
 
     value!(unsafe {
-        MIXTURES.check_turf(src.raw.data.id as usize, turf_model, atmos_adjacent_turfs)
+        MIXTURES.check_turf(id!(src), turf_model, atmos_adjacent_turfs)
     })
 }
 
-#[hook("/datum/gas_mixture/proc/check_turf_total")]
-pub fn check_turf_total(turf_model: &Value) {
+#[byondapi::bind]
+pub fn check_turf_total(src: ByondValue,turf_model: ByondValue) {
     profile_proc!("check_turf_total");
 
     let turf_model = unsafe { Turf::new(turf_model) };
@@ -318,29 +317,29 @@ pub fn check_turf_total(turf_model: &Value) {
     value!(unsafe { MIXTURES.check_turf_total(id!(src), turf_model) })
 }
 
-#[hook("/datum/gas_mixture/proc/share")]
-pub fn share(sharer: &Value, atmos_adjacent_turfs: &Value) {
+#[byondapi::bind]
+pub fn share(src: ByondValue, sharer: ByondValue, atmos_adjacent_turfs: ByondValue) {
     profile_proc!("share");
 
     let atmos_adjacent_turfs = atmos_adjacent_turfs
-        .as_number()
+        .get_number()
         .unwrap_or(DEFAULT_ATMOS_ADJACENT_TURFS);
 
     value!(unsafe { MIXTURES.share(id!(src), id!(sharer), atmos_adjacent_turfs) })
 }
 
-#[hook("/datum/gas_mixture/proc/temperature_share")]
-pub fn temperature_share(sharer: &Value, conduction_coefficient: &Value) {
+#[byondapi::bind]
+pub fn temperature_share(src: ByondValue, sharer: ByondValue, conduction_coefficient: ByondValue) {
     profile_proc!("temperature_share");
 
-    let conduction_coefficient = unsafe { conduction_coefficient.as_number().unwrap_unchecked() };
+    let conduction_coefficient = unsafe { conduction_coefficient.get_number().unwrap_unchecked() };
 
     unsafe {
         let id = id!(src);
         let sharer_id = id!(sharer);
 
         MIXTURES.temperature_share(
-            id!(src),
+            id,
             id!(sharer),
             MIXTURES.get_temperature_archived(id),
             MIXTURES.get_temperature_archived(sharer_id),
@@ -351,21 +350,22 @@ pub fn temperature_share(sharer: &Value, conduction_coefficient: &Value) {
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/mimic")]
+#[byondapi::bind]
 pub fn mimic(
-    turf_model: &Value,
-    model_thermal_conductivity: &Value,
-    model_heat_capacity: &Value,
-    atmos_adjacent_turfs: &Value,
+    src: ByondValue,
+    turf_model: ByondValue,
+    model_thermal_conductivity: ByondValue,
+    model_heat_capacity: ByondValue,
+    atmos_adjacent_turfs: ByondValue,
 ) {
     profile_proc!("mimic");
 
     let turf_model = unsafe { Turf::new(turf_model) };
     let model_thermal_conductivity =
-        unsafe { model_thermal_conductivity.as_number().unwrap_unchecked() };
-    let model_heat_capacity = unsafe { model_heat_capacity.as_number().unwrap_unchecked() };
+        unsafe { model_thermal_conductivity.get_number().unwrap_unchecked() };
+    let model_heat_capacity = unsafe { model_heat_capacity.get_number().unwrap_unchecked() };
     let atmos_adjacent_turfs = atmos_adjacent_turfs
-        .as_number()
+        .get_number()
         .unwrap_or(DEFAULT_ATMOS_ADJACENT_TURFS);
 
     value!(unsafe {
@@ -379,17 +379,18 @@ pub fn mimic(
     })
 }
 
-#[hook("/datum/gas_mixture/proc/temperature_mimic")]
+#[byondapi::bind]
 pub fn temperature_mimic(
-    model_temperature: &Value,
-    model_heat_capacity: &Value,
-    conduction_coefficient: &Value,
+    src: ByondValue,
+    model_temperature: ByondValue,
+    model_heat_capacity: ByondValue,
+    conduction_coefficient: ByondValue,
 ) {
     profile_proc!("temperature_mimic");
 
-    let model_temperature = unsafe { model_temperature.as_number().unwrap_unchecked() };
-    let model_heat_capacity = unsafe { model_heat_capacity.as_number().unwrap_unchecked() };
-    let conduction_coefficient = unsafe { conduction_coefficient.as_number().unwrap_unchecked() };
+    let model_temperature = unsafe { model_temperature.get_number().unwrap_unchecked() };
+    let model_heat_capacity = unsafe { model_heat_capacity.get_number().unwrap_unchecked() };
+    let conduction_coefficient = unsafe { conduction_coefficient.get_number().unwrap_unchecked() };
 
     unsafe {
         MIXTURES.temperature_mimic(
@@ -403,41 +404,41 @@ pub fn temperature_mimic(
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/temperature_turf_share")]
-pub fn temperature_turf_share(turf_sharer: &Value, conduction_coefficient: &Value) {
+#[byondapi::bind]
+pub fn temperature_turf_share(src: ByondValue, mut turf_sharer: ByondValue, conduction_coefficient: ByondValue) {
     profile_proc!("temperature_turf_share");
 
-    let conduction_coefficient = unsafe { conduction_coefficient.as_number().unwrap_unchecked() };
+    let conduction_coefficient = unsafe { conduction_coefficient.get_number().unwrap_unchecked() };
 
     unsafe {
-        MIXTURES.temperature_turf_share(id!(src), turf_sharer, conduction_coefficient);
+        MIXTURES.temperature_turf_share(id!(src), &mut turf_sharer, conduction_coefficient);
     }
 
     null!()
 }
 
-#[hook("/datum/gas_mixture/proc/compare")]
-pub fn compare(sample: &Value) {
+#[byondapi::bind]
+pub fn compare(src: ByondValue, sample: ByondValue) {
     profile_proc!("compare");
 
     value!(unsafe { MIXTURES.compare(id!(src), id!(sample)) })
 }
 
-#[hook("/datum/gas_mixture/proc/get_breath_partial_pressure")]
-pub fn get_breath_partial_pressure(gas_pressure: &Value) {
+#[byondapi::bind]
+pub fn get_breath_partial_pressure(src: ByondValue, gas_pressure: ByondValue) {
     profile_proc!("get_breath_partial_pressure");
 
     value!(unsafe {
-        MIXTURES.get_breath_partial_pressure(id!(src), gas_pressure.as_number().unwrap_unchecked())
+        MIXTURES.get_breath_partial_pressure(id!(src), gas_pressure.get_number().unwrap_unchecked())
     })
 }
 
 //Reverse of the above
-#[hook("/datum/gas_mixture/proc/get_true_breath_pressure")]
-pub fn get_true_breath_pressure(breath_pp: &Value) {
+#[byondapi::bind]
+pub fn get_true_breath_pressure(src: ByondValue, breath_pp: ByondValue) {
     profile_proc!("get_true_breath_pressure");
 
     value!(unsafe {
-        MIXTURES.get_true_breath_pressure(id!(src), breath_pp.as_number().unwrap_unchecked())
+        MIXTURES.get_true_breath_pressure(id!(src), breath_pp.get_number().unwrap_unchecked())
     })
 }

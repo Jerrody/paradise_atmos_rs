@@ -130,8 +130,8 @@ impl Mixture {
     }
 
     #[inline(always)]
-    pub unsafe fn set_is_initialized(&mut self, id: usize, value: bool) {
-        *self.is_initialized.get_unchecked_mut(id) = value;
+    pub unsafe fn set_is_initialized(&mut self, id: usize, src: bool) {
+        *self.is_initialized.get_unchecked_mut(id) = src;
     }
 
     #[must_use]

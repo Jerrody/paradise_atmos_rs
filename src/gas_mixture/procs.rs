@@ -1,7 +1,7 @@
 use super::Mixture;
 use crate::{constants::*, turf::*, utils::*};
-use crate::{profile, string_ref};
-use auxtools::{StringRef, Value};
+use crate::profile;
+use byondapi::value::ByondValue;
 
 impl Mixture {
     #[must_use]
@@ -779,23 +779,27 @@ impl Mixture {
     pub unsafe fn temperature_turf_share(
         &mut self,
         id: usize,
-        turf_sharer: &Value,
+        turf_sharer: &mut ByondValue,
         conduction_coefficient: f32,
     ) {
         profile!("temperature_turf_share");
 
-        let temperature_name = string_ref!("temperature");
+        const TEMPERATURE_NAME: &str = "temperature";
 
         // TODO: Make the setters and getters methods for the turfs.
         let turf_sharer_temperature = turf_sharer
-            .get_number(temperature_name.clone())
+            .read_var(TEMPERATURE_NAME)
+            .unwrap_unchecked()
+            .get_number()
             .unwrap_unchecked();
 
         let delta_temperature = self.get_temperature_archived(id) - turf_sharer_temperature;
 
         if delta_temperature.abs() > MINIMUM_TEMPERATURE_DELTA_TO_CONSIDER {
             let turf_sharer_heat_capacity = turf_sharer
-                .get_number(string_ref!("heat_capacity"))
+                .read_var("heat_capacity")
+                .unwrap_unchecked()
+                .get_number()
                 .unwrap_unchecked();
             let self_heat_capacity = self.heat_capacity(id);
 
@@ -809,9 +813,11 @@ impl Mixture {
 
                 self.sub_temperature(id, heat / self_heat_capacity);
                 turf_sharer
-                    .set(
-                        temperature_name,
-                        turf_sharer_temperature + heat / turf_sharer_heat_capacity,
+                    .write_var(
+                        TEMPERATURE_NAME,
+                        &ByondValue::from(
+                            turf_sharer_temperature + heat / turf_sharer_heat_capacity,
+                        ),
                     )
                     .unwrap_unchecked();
             }

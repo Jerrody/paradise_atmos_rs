@@ -1,6 +1,4 @@
-use auxtools::{StringRef, Value};
-
-use crate::string_ref;
+use byondapi::value::ByondValue;
 
 pub struct Turf {
     pub oxygen: f32,
@@ -23,28 +21,42 @@ impl Turf {
 
     #[inline(always)]
     #[must_use]
-    pub unsafe fn new(turf: &Value) -> Self {
+    pub unsafe fn new(turf: ByondValue) -> Self {
         Self {
             oxygen: turf
-                .get_number(string_ref!(Self::OXYGEN))
+                .read_var(Self::OXYGEN)
+                .unwrap_unchecked()
+                .get_number()
                 .unwrap_unchecked(),
             carbon_dioxide: turf
-                .get_number(string_ref!(Self::CARBON_DIOXIDE))
+                .read_var(Self::CARBON_DIOXIDE)
+                .unwrap_unchecked()
+                .get_number()
                 .unwrap_unchecked(),
             nitrogen: turf
-                .get_number(string_ref!(Self::NITROGEN))
+                .read_var(Self::NITROGEN)
+                .unwrap_unchecked()
+                .get_number()
                 .unwrap_unchecked(),
             toxins: turf
-                .get_number(string_ref!(Self::TOXINS))
+                .read_var(Self::TOXINS)
+                .unwrap_unchecked()
+                .get_number()
                 .unwrap_unchecked(),
             sleeping_agent: turf
-                .get_number(string_ref!(Self::SLEEPING_AGENT))
+                .read_var(Self::SLEEPING_AGENT)
+                .unwrap_unchecked()
+                .get_number()
                 .unwrap_unchecked(),
             agent_b: turf
-                .get_number(string_ref!(Self::AGENT_B))
+                .read_var(Self::AGENT_B)
+                .unwrap_unchecked()
+                .get_number()
                 .unwrap_unchecked(),
             temperature: turf
-                .get_number(string_ref!(Self::TEMPERATURE))
+                .read_var(Self::TEMPERATURE)
+                .unwrap_unchecked()
+                .get_number()
                 .unwrap_unchecked(),
         }
     }
